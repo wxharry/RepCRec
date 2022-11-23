@@ -10,6 +10,7 @@ import re
 
 from src.taskmanager import TaskManager
 from src.datamanager import DataManager
+from src.variable import Variable
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -50,7 +51,19 @@ def main():
 
     # initial states
     tm = TaskManager(1)
-    dm_list = [DataManager(i) for i in range(10)]
+    dm_list = {i+1: DataManager(i+1) for i in range(10)}
+
+    # initialize data
+    for i in range(1, 21):
+        if i % 2: # odd numbers are at one site each
+            dm_list[i%10+1].set_variable(Variable(f"x{i}", i*10, False))
+        else: # even numbers are at all sites
+            for dm in dm_list.values():
+                dm.set_variable(Variable(f"x{i}", i*10, True))
+
+    # show init sites with data
+    # for _, dm in dm_list.items():
+    #     dm.dump()
 
     # input from file if args.filename is not None
     if args.filename:

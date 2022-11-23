@@ -14,10 +14,11 @@ class DataManager:
         self.fail_time_list = []
         self.recover_time_list = []
 
-        for n in range(1,21):
-            if n % 2 == 0:
-                self.data_table[n] =  Variable(n)
-            elif n % 10 + 1 == self.id:
-                self.data_table[n] = Variable(n)
+    def set_variable(self, var):
+        self.data_table[var.id] = var
 
+    def dump(self):
+        print(f"site {self.id}",
+              f"-",
+              ", ".join([str(v) for v in self.data_table.values()]))
         
