@@ -14,7 +14,7 @@ from src.variable import Variable
 
 def parse_args():
     parser = argparse.ArgumentParser(
-                    prog = 'repcerc',
+                    prog = 'repcrec',
                     description = 'What the program does')
     parser.add_argument('-f', '--filename')
 
@@ -34,10 +34,11 @@ def parse_instruction(line, tm, dm_list):
         instruction, targets = result[0]
         if instruction in TaskManager.instructions:
             # add quote to targets to make them strings when convert instructions to functions
-            params = ','.join([f"'{t}'" for t in targets.split(',')])
+            params = ','.join([f"'{t.strip()}'" for t in targets.split(',')])
             eval(f"tm.{instruction}({params})", {'tm': tm})
         elif instruction in DataManager.instructions:
-            eval(f"dm_list[{targets[0]}].{instruction}()", {'dm_list': dm_list})
+            params = ','.join([f"'{t.strip()}'" for t in targets.split(',')])
+            eval(f"dm_list[{targets[0]}].{instruction}({params})", {'dm_list': dm_list})
         else:
             print(f"some unknown command {instruction}")
     else:
@@ -50,7 +51,6 @@ def main():
     args = parse_args()
 
     # initial states
-    tm = TaskManager(1)
     dm_list = {i+1: DataManager(i+1) for i in range(10)}
 
     # initialize data
@@ -60,6 +60,8 @@ def main():
         else: # even numbers are at all sites
             for dm in dm_list.values():
                 dm.set_variable(Variable(f"x{i}", i*10, True))
+
+    tm = TaskManager(1, dm_list)
 
     # show init sites with data
     # for _, dm in dm_list.items():
