@@ -21,13 +21,14 @@ class Lock:
         return self.lock_type == LockType.Write
 
 class MutexLock(Lock):
-    def __init__(self, variable_id) -> None:
+    def __init__(self, variable_id, transaction_id) -> None:
         Lock.__init__(variable_id, LockType.Write)
+        self.tid = transaction_id
 
 class SharedLock(Lock):
-    def __init__(self, variable_id):
+    def __init__(self, variable_id, transaction_id):
         super().__init__(variable_id, LockType.Read)
-        self.sharing = []
+        self.sharing = [transaction_id]
     
     def acquire(self, tid):
         self.sharing.append(tid)

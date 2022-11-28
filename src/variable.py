@@ -2,13 +2,14 @@
 defines class Variable
 """
 class Variable:
-    def __init__(self, id, value, is_replicated=False):
+    def __init__(self, vid, commit_value, commit_time, is_replicated=False):
         # assert id <= 20 and id >= 1
-        self.id = id
-        self.value = value
+        self.id = vid
+        # self.value = value
         self.is_replicated = is_replicated
-        self.commit_values = [self.value]
-        self.temp_value = None
+        self.commit_values = [(self.commit_value, self.commit_time)]
+        self.temp_value = None # format (value, tid)
+        self.access = True
 
     def get_recent_value(self):
         return self.commit_values[-1]

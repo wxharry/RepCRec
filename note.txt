@@ -1,0 +1,140 @@
+abort：
+    1. access value not commit and then the site is down, abort
+    2. deadlock detection, care the youngest
+    3. see below: copy available
+
+read only and read write operations difference:
+    multiversion read vs copy available alg
+
+
+
+Readonly transactions use multiversion read consistency.
+Read-write transactions use available copies
+If there is no site to read from, then just wait.
+
+A scenario:
+
+Read-write transaction  T'' writes x4 to s 
+Read-write transaction  T'' writes x3 to s
+T'' commits
+
+site s fails
+
+site s recovers
+
+Read-Write Transaction T' and writes x2
+commits to s
+Readonly transaction T begins -- it can read x2 from s. It cannot read x4
+from s. It can read x3 because x3 is not replicated.
+
+Another scenario:
+
+site s fails
+site s recovers
+read write transactions can read x on site s only if x has a committed
+write after the recovery
+
+read-only transaction can read x from site s only if x was committed
+before the read-only transaction T began and s did not fil between the time
+x was committed and T began.
+
+====
+For locking, there are two lists: one of owners of the lock
+and one of transactions waiting for the lock.
+
+e.g. T1 owns a read lock on x
+T2 wants a write lock on x so T2 is blocked
+
+T2 can proceed if T1 commits or aborts.
+
+====
+
+Example implementation of multiversion read consistency would be
+to store each committed value of each variable x along with the time 
+of commit.
+
+x, 53, 12:01
+x, 39, 12:10
+x, 899, 12:30
+
+In real life, if there is no transaction that began before 12:10, then
+the item at 12:01 can be discarded.
+
+====
+
+Two phase locking will be strict two phase locking (release locks only
+at the very end).
+
+
+====
+
+// Test 4
+// Now T1 aborts, since site 2 died after T1 accessed it. T2 ok.
+// Normally, we wait till the end(T1) to abort T1.
+// However, it is ok to abort T1 right away when fail(2) happens. Both
+// are correct.
+begin(T1)
+begin(T2)
+R(T1,x1)
+fail(2)
+W(T2,x8,88) 
+R(T2,x3)
+R(T1, x5)
+end(T2)
+recover(2)
+end(T1)
+
+Why doesn't T2 abort?
+Short answer is that T2 never accessed site 2.
+By contrast, T1 has accessed site 2, then site 2 failed and therefore
+site 2 lost its lock information, so we could get the non-serializable
+execution that I showed in the notes when discussing available copies.
+
+===
+
+W(T1, x4, 44)
+R(T2, x4)
+fail(5)
+-- read is still waiting because T1 has a lock on x4, but eventually
+end(T1) will cause T1 to abort because T1 accessed site 5.
+At that point the read can go ahead.
+
+====
+
+x1 = 10 at site 2 (unreplicated)
+
+T1 writes 100 to x1  
+
+site 2 fails
+
+site 2 recovers
+
+It is true that T1's write to x1 will be lost because that write might be
+only in volatile memory so T1 should abort.
+
+=====
+
+When do we need to abort?
+In deadlock
+For available copy reasons (at end of read-write transaction, if the
+transaction accessed and then the site went down).
+
+Read-only transaction R that begins at time 
+t could abort in following very rare situation:
+R wants to read a replicated data item x and no site committed a write to x
+and then was continuously up until time t and is still up.
+
+====
+
+// Test 21
+// From a student in 2017
+// T2 will try to promote its read lock to a write lock but can't
+// So there is a deadlock. T2 is younger so will abort.
+
+begin(T1)
+begin(T2)
+R(T2, x2)
+W(T1, x2, 202)
+W(T2 x2, 302)
+end(T1)
+dump()
