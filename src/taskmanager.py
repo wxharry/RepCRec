@@ -11,6 +11,22 @@ class TaskManager:
         self.transaction_table = {}
         self.sites = sites
 
+    def parse_instruction(self, instruction, params, tick):
+        self.tick = tick
+        if instruction == 'beginRO':
+            # TODO: check params
+            return self.beginRO(params.strip())
+        elif instruction == 'begin':
+            params = [param.strip() for param in params.split(',')]
+            # TODO: check params
+            return self.begin(params[0])
+        elif instruction in ['R', 'read']:
+            pass
+        elif instruction in ['W', 'write']:
+            pass
+        elif instruction == 'end':
+            pass
+
     def beginRO(self, tid):
         return self.begin(tid, True)
 

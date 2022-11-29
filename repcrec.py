@@ -16,14 +16,14 @@ def parse_args():
     parser = argparse.ArgumentParser(
                     prog = 'repcrec',
                     description = 'What the program does')
-    parser.add_argument('-f', '--filename')
+    parser.add_argument('filename')
 
     # TBD: semantic check
     # make sure users are not using both file input and std input
     # print help if the inputs are not valid
     return parser.parse_args()
 
-def parse_instruction(line, tm, dm_list):
+def parse_instruction(line, tm, dm_list, tick):
     """
     parse a line to use the corresponding functions
     each line is supposed to be a single instruction
@@ -31,18 +31,15 @@ def parse_instruction(line, tm, dm_list):
     pattern = "(.*)\((.*)\)"
     result = re.findall(pattern, line)
     if len(result) == 1:
-        instruction, targets = result[0]
+        instruction, params = result[0]
         if instruction in TaskManager.instructions:
-            # add quote to targets to make them strings when convert instructions to functions
-            params = ','.join([f"'{t.strip()}'" for t in targets.split(',')])
-            eval(f"tm.{instruction}({params})", {'tm': tm})
-        elif instruction in DataManager.instructions:
-            params = ','.join([f"'{t.strip()}'" for t in targets.split(',')])
-            eval(f"dm_list[{targets[0]}].{instruction}({params})", {'dm_list': dm_list})
-        else:
-            print(f"some unknown command {instruction}")
+            tm.parse_instruction(instruction, params, tick)
+        if instruction in DataManager.instructions:
+            # print(params)
+            # print(dm_list)
+            dm_list[int(params)].parse_instruction(instruction, tick)
     else:
-        print("Error: invalid input format detected.")
+        print(f"Error: invalid input format {line}.")
         return None
 
 def main():
@@ -56,10 +53,10 @@ def main():
     # initialize data
     for i in range(1, 21):
         if i % 2: # odd numbers are at one site each
-            dm_list[i%10+1].set_variable(Variable(f"x{i}", i*10, False))
+            dm_list[i%10+1].set_variable(Variable(f"x{i}", i*10, 0, False))
         else: # even numbers are at all sites
             for dm in dm_list.values():
-                dm.set_variable(Variable(f"x{i}", i*10, True))
+                dm.set_variable(Variable(f"x{i}", i*10, 0, True))
 
     tm = TaskManager(1, dm_list)
 
@@ -68,15 +65,22 @@ def main():
     #     dm.dump()
 
     # input from file if args.filename is not None
+    tick = 1
     if args.filename:
         with open(args.filename, 'r') as f:
             for line in f:
-                if line == '\n':
-                    # a new tick
+                line = line.strip()
+                if line == '':
+                    tick += 1
                     # deadlock detection
                     continue
+                # handle comments
+                elif line.startswith('//'):
+                    continue
                 else:
-                    parse_instruction(line, tm, dm_list)
+                    if '/' in line:
+                        line = line[:line.index('/')]
+                    parse_instruction(line, tm, dm_list, tick)
     # input from std input if args.filename is None
     else:
         pass

@@ -12,10 +12,10 @@ W(T2,x1,201)
 end(T1)
 dump()
 
-=== output of dump
-x1: 101 at site 2
-x2: 102 at all sites
-All other variables have their initial values.
+// === output of dump
+// x1: 101 at site 2
+// x2: 102 at all sites
+// All other variables have their initial values.
 
 // Test 2
 // No aborts happens, since read-only transactions use
@@ -31,10 +31,10 @@ end(T1)
 end(T2)
 dump()
 
-=== output of dump
-x1: 101 at site 2
-x2: 102 at all sites
-All other variables have their initial values.
+// === output of dump
+// x1: 101 at site 2
+// x2: 102 at all sites
+// All other variables have their initial values.
 
 // Test 3
 // T1 should not abort because its site did not fail.

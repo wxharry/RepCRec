@@ -16,6 +16,12 @@ class DataManager:
         self.fail_time_list = []
         self.recover_time_list = []
 
+    def parse_instruction(self, instruction, tick):
+        if instruction == 'fail':
+            self.fail(tick)
+        if instruction == 'recover':
+            self.recover(tick)
+
     def set_variable(self, var):
         self.data_table[var.id] = var
 
@@ -81,10 +87,6 @@ class DataManager:
                 self.data_table[vid].commit_values.append((variable.temp_value[0], commit_time))
                 self.data_table[vid].access = True
 
-
-                
-
-    
     def dump(self):
         print(f"site {self.id}",
               f"-",
