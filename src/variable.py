@@ -7,7 +7,7 @@ class Variable:
         self.id = vid
         # self.value = value
         self.is_replicated = is_replicated
-        self.commit_values = [(self.commit_value, self.commit_time)]
+        self.commit_values = [(commit_value, commit_time)]
         self.temp_value = None # format (value, tid)
         self.access = True
 
@@ -17,11 +17,11 @@ class Variable:
     def get_temp_value(self):
         return self.temp_value
     
-    def add_commit_value(self, value: int):
-        self.commit_values.append(value)
+    def add_commit_value(self, value: int, ts):
+        self.commit_values.append((value, ts))
 
     def __str__(self) -> str:
-        return f"{self.id}: {self.value}"
+        return f"{self.id}: {self.commit_values[-1][0]}"
 
     def __repr__(self) -> str:
         return self.__str__()

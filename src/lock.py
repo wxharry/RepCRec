@@ -17,13 +17,19 @@ class Lock:
     def isShared(self):
         return self.lock_type == LockType.Read
 
-    def isMutex(self):
+    def isExclusive(self):
         return self.lock_type == LockType.Write
 
-class MutexLock(Lock):
+class ExclusiveLock(Lock):
     def __init__(self, variable_id, transaction_id) -> None:
         Lock.__init__(variable_id, LockType.Write)
         self.tid = transaction_id
+
+    def acquire(self, tid):
+        pass
+    
+    def release(self, tid):
+        pass
 
 class SharedLock(Lock):
     def __init__(self, variable_id, transaction_id):
@@ -31,11 +37,12 @@ class SharedLock(Lock):
         self.sharing = [transaction_id]
     
     def acquire(self, tid):
-        self.sharing.append(tid)
+        if tid not in self.sharing:
+            self.sharing.append(tid)
     
     def release(self, tid):
         if tid in self.sharing:
             self.sharing.remove(tid)
     
     def promote(self):
-        return MutexLock(self, self.variable_id)
+        return ExclusiveLock(self, self.variable_id)

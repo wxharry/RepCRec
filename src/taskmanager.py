@@ -25,15 +25,15 @@ class TaskManager:
             transaction.set_snapshot(self.sites)
         self.transaction_table[tid] = transaction
         return tid
-        
+
     def end(self, tid):
         """ Return the transaction ends
         """
         # TBD: to abort
         for site in self.sites.values():
-            site.commit(self.transaction_table[tid])
+            site.commit(self.transaction_table[tid], self.tick)
         return self.transaction_table.pop(tid)
-        
+
     def R(self, tid, vid):
         t:Transaction = self.transaction_table.get(tid)
         if not t:
@@ -45,6 +45,6 @@ class TaskManager:
             if site.is_up and vid in site.data_table.keys():
                 print(site.read(tid, vid))
                 return site.read(tid, vid)
-        
+
     def W(self, tid, did, value):
         print(f"tm: {tid} writes {did} {value}")
