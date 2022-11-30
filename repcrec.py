@@ -33,11 +33,13 @@ def parse_instruction(line, tm, dm_list, tick):
     if len(result) == 1:
         instruction, params = result[0]
         if instruction in TaskManager.instructions:
-            tm.parse_instruction(instruction, params, tick)
+            r = tm.parse_instruction(instruction, params, tick)
+            if r :
+                print(r)
         if instruction in DataManager.instructions:
-            # print(params)
-            # print(dm_list)
-            dm_list[int(params)].parse_instruction(instruction, tick)
+            r = dm_list[int(params)].parse_instruction(instruction, tick)
+            if r:
+                print(r)
     else:
         print(f"Error: invalid input format {line}.")
         return None
@@ -70,12 +72,14 @@ def main():
         with open(args.filename, 'r') as f:
             for line in f:
                 line = line.strip()
-                if line == '':
-                    tick += 1
-                    # deadlock detection
+                # skip empty lines
+                if not line:
                     continue
-                # handle comments
-                elif line.startswith('//'):
+
+                tick += 1
+                # TODO: deadlock detection
+                # comments
+                if line.startswith('//'):
                     continue
                 else:
                     if '/' in line:

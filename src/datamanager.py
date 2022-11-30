@@ -12,7 +12,7 @@ class DataManager:
         self.id = id
         self.data_table = {}
         self.lock_table = {} # value should be a list of shared read lock or write lock or both
-        self.wait_for_graph = {}
+        self.wait_for = None
         self.fail_time_list = []
         self.recover_time_list = []
 
@@ -24,29 +24,70 @@ class DataManager:
 
     def set_variable(self, var):
         self.data_table[var.id] = var
+    
+    def read(self, transaction:Transaction, vid):
+        tid = transaction.id
+        lock: Lock = self.lock_table.get(vid, None)
+        # variable: Variable = self.data_table.get(vid, None)
+        # if no lock on variable vid
+        if not lock:
+            shared_lock = SharedLock(vid, tid)
+            self.lock_table[vid] = shared_lock
+            return self.data_table[vid]
+        # if exists a shared lock
+        elif lock.isShared():
+            lock.acquire(tid)
+            return self.data_table[vid]
+            # return variable.commit_values[-1][0]
+            # check if this variable has write lock
+            # if w_lock_queue
+        # if exists an exclusive lock and t has access
+        elif lock.isExclusive() and lock.hasAccess(tid):
+            return transaction.temp_vars.get(vid)
+        # if exists an exclusive lock and t has no access
+        elif lock.isExclusive() and not lock.hasAccess(tid):
+            self.wait_for[tid] = self.lock_table.get(vid)
+            return None
 
-    # def read(self, tid, vid):
-    #     lock: Lock = self.lock_table.get(vid, None)
-    #     variable: Variable = self.data_table.get(vid, None)
-    #     # if a lock exists
-    #     if lock:
-    #         if lock.lock_type == LockType.Read:
-    #             # check if this read lock is belonged to this transaction
-    #             if tid in lock.sharing:
-    #                 return variable.commit_values[-1][0]
-                
-    #             # check if this variable has write lock
-    #             if w_lock_queue
+        # for completion only
+        return None
 
-    #             # lock.sharing.append(tid)
-    #         elif lock.lock_type == LockType.Write:
-    #             self.wait_for[tid] = vid
-    #     # if no lock on variable vid
-    #     else:
-    #         shared_lock = SharedLock(vid)
-    #         shared_lock.acquire(tid)
-    #         self.lock_table[vid] = shared_lock
-    #     return self.data_table[vid]
+    def can_write(self, tid, vid):
+        lock = self.lock_table.get(vid)
+        if not lock:
+            return True
+        # TODO: can a transaction acquire write lock if it is a read lock that it has access to?
+        # Yes for now
+        if lock.hasAcc(tid):
+            return True
+        return False
+
+    def write(self, transaction, vid):
+        tid = transaction.id
+        lock: Lock = self.lock_table.get(vid, None)
+        # variable: Variable = self.data_table.get(vid, None)
+        # if no lock on variable vid
+        if not lock:
+            shared_lock = SharedLock(vid, tid)
+            self.lock_table[vid] = shared_lock
+            return self.data_table[vid]
+        # if exists a shared lock
+        elif lock.isShared():
+            self.lock_table[vid] = lock.promote(tid)
+            return self.data_table[vid]
+            # return variable.commit_values[-1][0]
+            # check if this variable has write lock
+            # if w_lock_queue
+        # if exists an exclusive lock and t has access
+        elif lock.isExclusive() and lock.hasAccess(tid):
+            return transaction.temp_vars.get(vid)
+        # if exists an exclusive lock and t has no access
+        elif lock.isExclusive() and not lock.hasAccess(tid):
+            self.wait_for[tid] = self.lock_table.get(vid)
+            return None
+
+        # for completion only
+        return None
 
 
     def fail(self, fail_time):
@@ -67,28 +108,21 @@ class DataManager:
             if variable.is_replicated:
                 self.data_table[vid].access = False
 
-    def commit(self, tid, commit_time):
+    def commit(self, tid, vid, value, commit_time):
         # release current lock for this transaction
-        for vid, locks in self.lock_table.items():
-            new_locks = []
-            for l in locks:
-                if l.lock_type == LockType.R:
-                    l.sharing.remove(tid)
-                    new_locks.append(l)
-                else:
-                    if l.tid != tid:
-                        new_locks.append(l)
-            
-            self.lock_table[vid] = new_locks
-        
+        lock = self.lock_table.get(vid)
+        if lock:
+            new_lock = lock.release(tid)
+            if new_lock:
+                self.lock_table[vid] = new_lock
+
         # update commit queue
-        for vid, variable in self.data_table.items():
-            if variable.temp_value != None and variable.temp_value[1] == tid:
-                self.data_table[vid].commit_values.append((variable.temp_value[0], commit_time))
-                self.data_table[vid].access = True
+        var:Variable = self.data_table.get(vid)
+        if var:
+            var.add_commit_value(value, commit_time)
 
     def dump(self):
         print(f"site {self.id}",
               f"-",
               ", ".join([str(v) for v in self.data_table.values()]))
-        
+

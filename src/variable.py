@@ -12,7 +12,7 @@ class Variable:
         self.access = True
 
     def get_recent_value(self):
-        return self.commit_values[-1]
+        return self.commit_values[-1][0]
     
     def get_temp_value(self):
         return self.temp_value

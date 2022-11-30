@@ -2,9 +2,10 @@
 defines class task manager
 """
 from src.transaction import *
+from src.variable import *
 
 class TaskManager:
-    instructions = ["read", "write", "begin","beginRO", "end", "R", "W"]
+    instructions = ["read", "write", "begin","beginRO", "end", "R", "W", "dump"]
     def __init__(self, id, sites) -> None:
         self.id = id
         self.tick = 0
@@ -15,17 +16,25 @@ class TaskManager:
         self.tick = tick
         if instruction == 'beginRO':
             # TODO: check params
-            return self.beginRO(params.strip())
+            self.beginRO(params.strip())
         elif instruction == 'begin':
             params = [param.strip() for param in params.split(',')]
             # TODO: check params
-            return self.begin(params[0])
+            self.begin(params[0].strip())
         elif instruction in ['R', 'read']:
-            pass
+            tid, vid = [param.strip() for param in params.split(',')]
+            return self.R(tid, vid)
         elif instruction in ['W', 'write']:
-            pass
+            tid, vid, value = [param.strip() for param in params.split(',')]
+            self.W(tid, vid, value)
         elif instruction == 'end':
-            pass
+            # TODO: params check
+            self.end(params.strip())
+        elif instruction == 'dump':
+            self.dump()
+        else:
+            print(f"unrecognized command {instruction}, "
+                  f"currently support [{', '.join(instruction)}]")
 
     def beginRO(self, tid):
         return self.begin(tid, True)
@@ -46,8 +55,13 @@ class TaskManager:
         """ Return the transaction ends
         """
         # TBD: to abort
-        for site in self.sites.values():
-            site.commit(self.transaction_table[tid], self.tick)
+        t: Transaction = self.transaction_table.get(tid)
+        if not t:
+            print(f"No transaction {tid} is found in transaction table")
+            return None
+        for vid, val in t.temp_vars.items():
+            for site in self.sites.values():
+                site.commit(tid, vid, val, self.tick)
         return self.transaction_table.pop(tid)
 
     def R(self, tid, vid):
@@ -56,11 +70,49 @@ class TaskManager:
             print(f"No transaction {tid} is found in transaction table")
             return None
         # it t is not readonly, reads from current sites; otherwise reads from the snapshot
-        sites = self.sites if not t.is_read_only else t.snapshot
-        for site in sites.values():
-            if site.is_up and vid in site.data_table.keys():
-                print(site.read(tid, vid))
-                return site.read(tid, vid)
+        if t.is_read_only:
+            for site in t.snapshot.values():
+                if site.is_up and site.data_table.get(vid):
+                    return site.data_table.get(vid)
+        else:
+            for site in self.sites.values():
+                if site.is_up and site.data_table.get(vid):
+                    return site.read(self.transaction_table[tid], vid)
 
-    def W(self, tid, did, value):
-        print(f"tm: {tid} writes {did} {value}")
+        return None # format only, no meaning
+
+    def W(self, tid, vid, value):
+        t:Transaction = self.transaction_table.get(tid)
+        if not t:
+            print(f"No transaction {tid} is found in transaction table")
+            return None
+
+        # a transaction can only write to a variable if and only if 
+        # it acquires all the lock on the variable from all the sites
+        # if not, it should not acquire any locks on variable
+        site_to_write = []
+        for site in self.sites.values():
+            if site.data_table.get(vid):
+                can_write = site.can_write(tid, vid)
+                if site.is_up and can_write:
+                    site_to_write.append(site)
+
+                # if a site that has variable vid
+                # is down or
+                # cannot acquire write lock,
+                # fail the write command
+                else:
+                    # fail to write
+                    site_to_write = []
+                    break
+        
+        # ready to write
+        for site in site_to_write:
+            site.write(t, vid)
+            t.temp_vars[vid] = value
+        return
+    
+    def dump(self):
+        for dm in self.sites.values():
+            dm.dump()
+

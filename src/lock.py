@@ -26,10 +26,15 @@ class ExclusiveLock(Lock):
         self.tid = transaction_id
 
     def acquire(self, tid):
-        pass
+        self.tid = tid
     
     def release(self, tid):
-        pass
+        if self.tid == tid:
+            self.tid = ''
+        return None
+
+    def hasAcc(self, tid):
+        return tid == self.tid
 
 class SharedLock(Lock):
     def __init__(self, variable_id, transaction_id):
@@ -43,6 +48,10 @@ class SharedLock(Lock):
     def release(self, tid):
         if tid in self.sharing:
             self.sharing.remove(tid)
+        return self
     
-    def promote(self):
-        return ExclusiveLock(self, self.variable_id)
+    def hasAccess(self, tid):
+        return tid in self.sharing
+    
+    def promote(self, tid):
+        return ExclusiveLock(self.variable_id, tid)
