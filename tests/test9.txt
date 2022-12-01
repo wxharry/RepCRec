@@ -1,0 +1,17 @@
+// Test 9
+// T1, T2, T3 ok. T3 waits and then complete after T2 commits 
+begin(T3)
+begin(T1)
+begin(T2)
+W(T3,x2,22)
+W(T2,x4,44)
+R(T3,x4) // x4: 44
+end(T2)
+end(T3)
+R(T1,x2) // x2: 22
+end(T1)
+dump()
+
+// x2: 22 at all sites
+// x4: 44 at all sites
+

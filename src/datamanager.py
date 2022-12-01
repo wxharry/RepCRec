@@ -45,7 +45,7 @@ class DataManager:
             return transaction.temp_vars.get(vid)
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
-            wait_for[tid] = wait_for.get(tid, []) + lock.tid
+            wait_for[tid] = wait_for.get(tid, []) + [lock.tid]
             return None
 
         # for completion only
@@ -68,7 +68,7 @@ class DataManager:
         # variable: Variable = self.data_table.get(vid, None)
         # if no lock on variable vid
         if not lock:
-            shared_lock = SharedLock(vid, tid)
+            shared_lock = ExclusiveLock(vid, tid)
             self.lock_table[vid] = shared_lock
             return self.data_table[vid]
         # if exists a shared lock

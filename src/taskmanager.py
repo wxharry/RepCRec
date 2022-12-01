@@ -58,9 +58,10 @@ class TaskManager:
                 continue
             if type == 'R':
                 r = self.R(tid, params[0])
-                print(r)
                 if not r:
                     new_queue.append(operation)
+                else:
+                    print(r)
             elif type == 'W':
                 r = self.W(tid, params[0], params[1])
                 if not r:
@@ -137,11 +138,15 @@ class TaskManager:
     def end(self, tid):
         """ Return the transaction ends
         """
-        # TBD: to abort
         t: Transaction = self.transaction_table.get(tid)
         if not t:
             print(f"No transaction {tid} is found in transaction table")
             return None
+        # abort it t is set is_abort
+        if t.is_abort:
+            self.abort(tid)
+        # commit to all sites
+        # TODO: some sites could be failed
         for vid, val in t.temp_vars.items():
             for site in self.sites.values():
                 site.commit(tid, vid, val, self.tick)
