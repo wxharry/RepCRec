@@ -7,16 +7,22 @@ NYU NetID: xw2788, yh2094
 """
 import argparse
 import re
+import os
 
 from src.taskmanager import TaskManager
 from src.datamanager import DataManager
 from src.variable import Variable
+from src.art import title
 
 def parse_args():
     parser = argparse.ArgumentParser(
                     prog = 'repcrec',
-                    description = 'What the program does')
-    parser.add_argument('filename')
+                    description = 'Distributed replicated concurrency control and recovery')
+    parser.add_argument('filename', nargs='?',
+                    help='input filename')
+
+    parser.add_argument('-i', '--interactive', default=False, action='store_true',
+                    help='enter interactive mode')
 
     # TBD: semantic check
     # make sure users are not using both file input and std input
@@ -28,6 +34,15 @@ def parse_instruction(line, tm, dm_list, tick):
     parse a line to use the corresponding functions
     each line is supposed to be a single instruction
     """
+
+    # remove comments
+    if '//' in line:
+        line = line[:line.index('/')].strip()
+    # parse command if line is not empty
+    if not line:
+        return
+
+    # print(line)
     pattern = "(.*)\((.*)\)"
     result = re.findall(pattern, line)
     if len(result) == 1:
@@ -43,6 +58,7 @@ def parse_instruction(line, tm, dm_list, tick):
     else:
         print(f"Error: invalid input format {line}.")
         return None
+    return
 
 def main():
 
@@ -62,32 +78,39 @@ def main():
 
     tm = TaskManager(1, dm_list)
 
-    # show init sites with data
-    # for _, dm in dm_list.items():
-    #     dm.dump()
-
     # input from file if args.filename is not None
-    tick = 1
     if args.filename:
         with open(args.filename, 'r') as f:
+            tick = 1
             for line in f:
                 line = line.strip()
-                # skip empty lines
                 if not line:
                     continue
-
                 tick += 1
-                # remove comments
-                if '//' in line:
-                    line = line[:line.index('/')].strip()
-
-                # parse command if line is not empty
-                if line:
-                    # print(line)
-                    parse_instruction(line, tm, dm_list, tick)
+                parse_instruction(line, tm, dm_list, tick)
     # input from std input if args.filename is None
-    else:
-        pass
+    if not args.filename:
+        tick = 0
+        # if screen will be cleared for linux or mac
+        if os.name == 'posix':
+            os.system('clear')
+        # else screen will be cleared for windows
+        else:
+            os.system('cls')
+
+        print(title)
+        while True:
+            line = input("> ")
+            if line.lower().strip() == 'exit':
+                print("Bye~")
+                break
+            line = line.strip()
+            # skip empty lines
+            if not line:
+                continue
+            tick += 1
+            parse_instruction(line, tm, dm_list, tick)
+            
 
 if __name__ == "__main__":
     main()
