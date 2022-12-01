@@ -3,12 +3,12 @@
 // T3 reads the value of x3 written by T1
 begin(T1)
 beginRO(T2)
-R(T2,x1)
-R(T2,x2)
+R(T2,x1)        // x1: 10
+R(T2,x2)        // x2: 20
 W(T1,x3,33)
 end(T1)
 beginRO(T3)
-R(T3,x3)
-R(T2,x3)
+R(T3,x3)        // x3: 33
+R(T2,x3)        // x3: 30
 end(T2)
 end(T3)

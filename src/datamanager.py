@@ -120,15 +120,18 @@ class DataManager:
                 self.lock_table.pop(vid)
         # self.update_lock_table()
 
-    def commit(self, tid, vid, value, commit_time):
-        # release current lock for this transaction
-        lock = self.lock_table.get(vid)
-        if lock:
-            self.lock_table[vid] = lock.release(tid)
-        # update commit queue
-        var:Variable = self.data_table.get(vid)
-        if var:
-            var.add_commit_value(value, commit_time)
+    def commit(self, t, commit_time):
+        tid = t.id
+        # release current lock for tid
+        for id, lock in list(self.lock_table.items()):
+            if lock and lock.hasAccess(tid):
+                self.lock_table[id] = lock.release(tid)
+
+        # update new values to the variables in data_table
+        for vid, val in t.temp_vars.items():
+            var:Variable = self.data_table.get(vid)
+            if var:
+                var.add_commit_value(val, commit_time)
 
     def dump(self):
         print(f"site {self.id}",

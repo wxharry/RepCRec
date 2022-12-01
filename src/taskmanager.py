@@ -102,29 +102,11 @@ class TaskManager:
         self.abort(youngest_transaction)
         return True
 
-    def abort(self, tid):
-        """ command all sites to abort tid
-        """
-        t: Transaction = self.transaction_table[tid]
-        # remove tid from wait-for graph
-        for t1, ts in list(self.wait_for_graph.items()):
-            if tid in ts:
-                ts.remove(tid)
-            # if wait for no one or t1 is aborted
-            if ts == [] or t1 == tid:
-                self.wait_for_graph.pop(t1)
-
-        # set the transaction.is_abort to True
-        t.abort()
-        # abort the youngest transaction on each site        
-        for site in self.sites.values():
-            site.abort(tid)
-
     def beginRO(self, tid):
         return self.begin(tid, True)
 
     def begin(self, tid, readonly=False):
-        """ Return the transaction begins
+        """ begin a transaction
         """
         if self.transaction_table.get(tid):
             print(f"transaction {tid} already exists")
@@ -135,8 +117,36 @@ class TaskManager:
         self.transaction_table[tid] = transaction
         return tid
 
+    def update_wait_for(self, tid):
+        """ removes tid from wait-for graph
+        """
+        for t1, ts in list(self.wait_for_graph.items()):
+            if tid in ts:
+                ts.remove(tid)
+            # if wait for no one or t1 is aborted
+            if ts == [] or t1 == tid:
+                self.wait_for_graph.pop(t1)       
+
+    def abort(self, tid):
+        """ commands all sites to abort tid
+        """
+        t: Transaction = self.transaction_table[tid]
+        self.update_wait_for(tid)
+        # set the transaction.is_abort to True
+        t.abort()
+        # abort the youngest transaction on each site        
+        for site in self.sites.values():
+            site.abort(tid)
+
+    def commit(self, tid):
+        """ commands all sites to commit (update temp_vars to variables in sites)
+        """
+        t = self.transaction_table.get(tid)
+        for site in self.sites.values():
+            site.commit(t, self.tick)
+
     def end(self, tid):
-        """ Return the transaction ends
+        """ the transaction ends
         """
         t: Transaction = self.transaction_table.get(tid)
         if not t:
@@ -146,10 +156,9 @@ class TaskManager:
         if t.is_abort:
             self.abort(tid)
         # commit to all sites
-        # TODO: some sites could be failed
-        for vid, val in t.temp_vars.items():
-            for site in self.sites.values():
-                site.commit(tid, vid, val, self.tick)
+        else:                
+            # TODO: some sites could be failed
+            self.commit(tid)
         return self.transaction_table.pop(tid)
 
     def R(self, tid, vid):
@@ -196,6 +205,7 @@ class TaskManager:
                     # get the transaction ids that acquire the lock and we have to wait
                     return None
         # ready to write
+        # print(f"{tid} writes {vid}")
         for site in site_to_write:
             site.write(t, vid)
             t.temp_vars[vid] = value

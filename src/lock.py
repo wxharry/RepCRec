@@ -46,7 +46,7 @@ class SharedLock(Lock):
             self.sharing.append(tid)
     
     def release(self, tid):
-        if tid in self.sharing:
+        if tid in list(self.sharing):
             self.sharing.remove(tid)
         if len(self.sharing) == 0:
             return None
