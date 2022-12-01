@@ -12,7 +12,6 @@ class DataManager:
         self.id = id
         self.data_table = {}
         self.lock_table = {} # value should be a list of shared read lock or write lock or both
-        self.wait_for = None
         self.fail_time_list = []
         self.recover_time_list = []
 
@@ -25,7 +24,7 @@ class DataManager:
     def set_variable(self, var):
         self.data_table[var.id] = var
     
-    def read(self, transaction:Transaction, vid):
+    def read(self, transaction:Transaction, vid, wait_for):
         tid = transaction.id
         lock: Lock = self.lock_table.get(vid, None)
         # variable: Variable = self.data_table.get(vid, None)
@@ -46,20 +45,21 @@ class DataManager:
             return transaction.temp_vars.get(vid)
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
-            self.wait_for[tid] = self.lock_table.get(vid)
+            wait_for[tid] = wait_for.get(tid, []) + lock.tid
             return None
 
         # for completion only
         return None
 
-    def can_write(self, tid, vid):
-        lock = self.lock_table.get(vid)
+    def can_write(self, tid, vid, wait_for):
+        lock:Lock = self.lock_table.get(vid)
         if not lock:
             return True
-        # TODO: can a transaction acquire write lock if it is a read lock that it has access to?
-        # Yes for now
-        if lock.hasAcc(tid):
+        # if a write lock and t has access
+        # or a read lock and t is the only one sharing (can promote)
+        if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and lock.canPromote(tid)):
             return True
+        wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else lock.sharing)))
         return False
 
     def write(self, transaction, vid):
@@ -73,8 +73,9 @@ class DataManager:
             return self.data_table[vid]
         # if exists a shared lock
         elif lock.isShared():
-            self.lock_table[vid] = lock.promote(tid)
-            return self.data_table[vid]
+            if lock.canPromote(tid):
+                self.lock_table[vid] = lock.promote(tid)
+                return self.data_table[vid]
             # return variable.commit_values[-1][0]
             # check if this variable has write lock
             # if w_lock_queue
@@ -83,7 +84,6 @@ class DataManager:
             return transaction.temp_vars.get(vid)
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
-            self.wait_for[tid] = self.lock_table.get(vid)
             return None
 
         # for completion only
@@ -108,14 +108,23 @@ class DataManager:
             if variable.is_replicated:
                 self.data_table[vid].access = False
 
+    def abort(self, tid):
+        """ release all locks acquired by tid
+        """
+
+        # release lock
+        for vid, lock in list(self.lock_table.items()):
+            if lock:
+                self.lock_table[vid] = lock.release(tid)
+            if not self.lock_table[vid]:
+                self.lock_table.pop(vid)
+        # self.update_lock_table()
+
     def commit(self, tid, vid, value, commit_time):
         # release current lock for this transaction
         lock = self.lock_table.get(vid)
         if lock:
-            new_lock = lock.release(tid)
-            if new_lock:
-                self.lock_table[vid] = new_lock
-
+            self.lock_table[vid] = lock.release(tid)
         # update commit queue
         var:Variable = self.data_table.get(vid)
         if var:

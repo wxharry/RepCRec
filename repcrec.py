@@ -77,13 +77,13 @@ def main():
                     continue
 
                 tick += 1
-                # TODO: deadlock detection
-                # comments
-                if line.startswith('//'):
-                    continue
-                else:
-                    if '/' in line:
-                        line = line[:line.index('/')]
+                # remove comments
+                if '//' in line:
+                    line = line[:line.index('/')].strip()
+
+                # parse command if line is not empty
+                if line:
+                    # print(line)
                     parse_instruction(line, tm, dm_list, tick)
     # input from std input if args.filename is None
     else:
