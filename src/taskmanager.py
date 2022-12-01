@@ -3,6 +3,7 @@ defines class task manager
 """
 from src.transaction import *
 from src.variable import *
+from copy import deepcopy
 
 class TaskManager:
     instructions = ["read", "write", "begin","beginRO", "end", "R", "W", "dump"]
@@ -57,6 +58,7 @@ class TaskManager:
                 continue
             if type == 'R':
                 r = self.R(tid, params[0])
+                print(r)
                 if not r:
                     new_queue.append(operation)
             elif type == 'W':
@@ -128,7 +130,7 @@ class TaskManager:
             return None
         transaction = Transaction(tid, self.tick, readonly)
         if readonly:
-            transaction.set_snapshot(self.sites)
+            transaction.set_snapshot(deepcopy(self.sites))
         self.transaction_table[tid] = transaction
         return tid
 
