@@ -88,8 +88,9 @@ class TaskManager:
                 visited = []
                 dfs([node], visited, graph)
             return cycles
-        
+
         wait_for_graph = self.wait_for_graph
+        # print("wait for graph", wait_for_graph)
         # find cycles in wait-for graph
         cycles = findCycle(wait_for_graph)
         # if no cycle found, return False

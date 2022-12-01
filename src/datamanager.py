@@ -52,6 +52,9 @@ class DataManager:
         return None
 
     def can_write(self, tid, vid, wait_for):
+        """ returns if tid can acquire write lock on vid
+        if not, it will add wait-for edges to the wait-for graph
+        """
         lock:Lock = self.lock_table.get(vid)
         if not lock:
             return True
@@ -59,7 +62,7 @@ class DataManager:
         # or a read lock and t is the only one sharing (can promote)
         if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and lock.canPromote(tid)):
             return True
-        wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else lock.sharing)))
+        wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.sharing if not id == tid])))
         return False
 
     def write(self, transaction, vid):
