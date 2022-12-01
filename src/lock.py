@@ -40,23 +40,21 @@ class SharedLock(Lock):
     def __init__(self, variable_id, transaction_id):
         super().__init__(variable_id, LockType.Read)
         self.sharing = [transaction_id]
-    
+
     def acquire(self, tid):
         if tid not in self.sharing:
             self.sharing.append(tid)
-    
+
     def release(self, tid):
         if tid in list(self.sharing):
             self.sharing.remove(tid)
         if len(self.sharing) == 0:
             return None
         return self
-    
+
     def hasAccess(self, tid):
         return tid in self.sharing
-    
-    def canPromote(self, tid):
-        return tid in self.sharing and len(self.sharing) == 1
-    
+
+
     def promote(self, tid):
         return ExclusiveLock(self.variable_id, tid)

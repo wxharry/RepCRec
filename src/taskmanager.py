@@ -54,7 +54,8 @@ class TaskManager:
         for operation in self.operations_queue:
             type, params = operation[0], operation[1]
             tid, *params = params
-            if self.transaction_table[tid].is_abort:
+            t = self.transaction_table.get(tid)
+            if not t or t.is_abort:
                 continue
             if type == 'R':
                 r = self.R(tid, params[0])
@@ -203,7 +204,7 @@ class TaskManager:
                 else:
                     # fail to write, set list site_to_write to empty
                     site_to_write = []
-                    # get the transaction ids that acquire the lock and we have to wait
+                    # print(f"{tid} fails to write {vid}")
                     return None
         # ready to write
         # print(f"{tid} writes {vid}")

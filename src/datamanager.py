@@ -51,6 +51,16 @@ class DataManager:
         # for completion only
         return None
 
+    def can_promote(self, tid, lock, wait_for):
+        """ returns if tid can promote on a shared lock
+        """
+        waiters = [waiter for waiter, occupants in wait_for.items() if tid in occupants]
+        if lock.isShared() and lock.hasAccess(tid) and len(lock.sharing) == 1 \
+            and len(waiters) == 0:
+            return True
+        wait_for[tid] = list(set(wait_for.get(tid, []) + ([id for id in waiters if not id == tid])))
+        return False
+
     def can_write(self, tid, vid, wait_for):
         """ returns if tid can acquire write lock on vid
         if not, it will add wait-for edges to the wait-for graph
@@ -60,7 +70,8 @@ class DataManager:
             return True
         # if a write lock and t has access
         # or a read lock and t is the only one sharing (can promote)
-        if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and lock.canPromote(tid)):
+        # print("can promote", self.can_promote(tid, lock, wait_for))
+        if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and self.can_promote(tid, lock, wait_for)):
             return True
         wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.sharing if not id == tid])))
         return False
@@ -76,9 +87,8 @@ class DataManager:
             return self.data_table[vid]
         # if exists a shared lock
         elif lock.isShared():
-            if lock.canPromote(tid):
-                self.lock_table[vid] = lock.promote(tid)
-                return self.data_table[vid]
+            self.lock_table[vid] = lock.promote(tid)
+            return self.data_table[vid]
             # return variable.commit_values[-1][0]
             # check if this variable has write lock
             # if w_lock_queue
