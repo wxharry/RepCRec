@@ -23,7 +23,7 @@ class TaskManager:
         
         self.tick = tick
         if instruction == 'beginRO':
-            # TODO: check params
+            # : check params
             self.beginRO(params.strip())
         elif instruction == 'begin':
             params = [param.strip() for param in params.split(',')]
@@ -55,7 +55,7 @@ class TaskManager:
             type, params = operation[0], operation[1]
             tid, *params = params
             t = self.transaction_table.get(tid)
-            if not t or t.is_abort:
+            if not t or t.should_abort:
                 continue
             if type == 'R':
                 r = self.R(tid, params[0])
@@ -134,7 +134,7 @@ class TaskManager:
         """
         t: Transaction = self.transaction_table[tid]
         self.update_wait_for(tid)
-        # set the transaction.is_abort to True
+        # set the transaction.should_abort to True
         t.abort()
         # abort the youngest transaction on each site        
         for site in self.sites.values():
@@ -154,8 +154,8 @@ class TaskManager:
         if not t:
             print(f"No transaction {tid} is found in transaction table")
             return None
-        # abort it t is set is_abort
-        if t.is_abort:
+        # abort it t is set should_abort
+        if t.should_abort:
             self.abort(tid)
         # commit to all sites
         else:                
@@ -172,7 +172,8 @@ class TaskManager:
         if t.is_read_only:
             for site in t.snapshot.values():
                 if site.is_up and site.data_table.get(vid):
-                    return site.data_table.get(vid)
+                    result = site.read_only(vid, t.begin_time)
+                    return result
         else:
             for site in self.sites.values():
                 if site.is_up and site.data_table.get(vid):
@@ -212,6 +213,29 @@ class TaskManager:
             site.write(t, vid)
             t.temp_vars[vid] = value
         return value
+
+    def fail(self, site_id):
+        if site_id < 1 or site_id > 10: 
+            raise "Invalid Command: invalid site id.\n"
+        site = self.sites[site_id]
+        site.fail(self.tick)
+        print(f"site {site_id} fails at time {self.tick}\n")
+        for tid, transaction in self.transaction_table.items():
+            if not (transaction.is_read_only or transaction.should_abort):
+                if site_id in transaction.site_access_list:
+                    transaction.should_abort = True
+                    print(f"Abort transaction {tid}\n")
+
+    def recover(self, site_id):
+        if site_id < 1 or site_id > 10: 
+            raise "Invalid Command: invalid site id.\n"
+        site = self.sites[site_id]
+        site.recover(self.tick)
+        print(f"site {site_id} fails at time {self.tick}\n")
+
+
+
+        
     
     def dump(self):
         for dm in self.sites.values():

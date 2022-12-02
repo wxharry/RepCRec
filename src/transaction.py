@@ -9,7 +9,6 @@ class Transaction:
         self.should_abort = False
         self.site_access_list = []
         self.temp_vars = {}
-        self.is_abort = False
     
     def set_snapshot(self, snapshot):
         self.snapshot = snapshot
@@ -21,4 +20,4 @@ class Transaction:
             return self.id + " begin at " + self.begin_time + " not read_only"
     
     def abort(self):
-        self.is_abort = True
+        self.should_abort = True

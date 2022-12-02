@@ -50,6 +50,25 @@ class DataManager:
 
         # for completion only
         return None
+    
+    def read_only(self, vid, begin_time):
+        variable = self.data_table[vid]
+        if variable.access:
+            for commit_pair in variable.commit_values[::-1]:
+                commit_value = commit_pair[0]
+                commit_time = commit_pair[1]
+                # Upon recovery of a site s, the site makes replicated variables available for writing, but not reading.
+                if commit_time <= begin_time:
+                    if variable.is_replicated:
+                        for fail_time in self.fail_time_list:
+                            if fail_time > commit_time:
+                                return None
+                    
+                    return commit_value
+        
+        return None
+
+
 
     def can_promote(self, tid, lock, wait_for):
         """ returns if tid can promote on a shared lock
