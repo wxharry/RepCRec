@@ -89,8 +89,10 @@ class DataManager:
             return True
         # if a write lock and t has access
         # or a read lock and t is the only one sharing (can promote)
+        # if t cannot promote a shared lock, it will update wait-for graph, 
+        # make sure t has access to the lock before checking if the lock can be promoted
         # print("can promote", self.can_promote(tid, lock, wait_for))
-        if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and self.can_promote(tid, lock, wait_for)):
+        if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and lock.hasAccess(tid) and self.can_promote(tid, lock, wait_for)):
             return True
         wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.sharing if not id == tid])))
         return False
