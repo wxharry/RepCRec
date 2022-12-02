@@ -45,6 +45,7 @@ class DataManager:
             return transaction.temp_vars.get(vid)
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
+            print(f"{tid} waits")
             wait_for[tid] = wait_for.get(tid, []) + [lock.tid]
             return None
 
@@ -94,6 +95,7 @@ class DataManager:
         # print("can promote", self.can_promote(tid, lock, wait_for))
         if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and lock.hasAccess(tid) and self.can_promote(tid, lock, wait_for)):
             return True
+        print(f"{tid} waits")
         wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.sharing if not id == tid])))
         return False
 

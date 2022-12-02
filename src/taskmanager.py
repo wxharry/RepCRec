@@ -143,6 +143,7 @@ class TaskManager:
     def commit(self, tid):
         """ commands all sites to commit (update temp_vars to variables in sites)
         """
+        print(f"{tid} commits")
         t = self.transaction_table.get(tid)
         for site in self.sites.values():
             site.commit(t, self.tick)
@@ -208,10 +209,10 @@ class TaskManager:
                     # print(f"{tid} fails to write {vid}")
                     return None
         # ready to write
-        # print(f"{tid} writes {vid}")
         for site in site_to_write:
             site.write(t, vid)
             t.temp_vars[vid] = value
+        print(f"{tid} writes {vid}: {value} at {', '.join([f's{site.id}' for site in site_to_write])}")
         return value
 
     def fail(self, site_id):
@@ -233,10 +234,6 @@ class TaskManager:
         site.recover(self.tick)
         print(f"site {site_id} fails at time {self.tick}\n")
 
-
-
-        
-    
     def dump(self):
         for dm in self.sites.values():
             dm.dump()
