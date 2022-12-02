@@ -6,7 +6,7 @@ from src.variable import *
 from copy import deepcopy
 
 class TaskManager:
-    instructions = ["read", "write", "begin","beginRO", "end", "R", "W", "dump"]
+    instructions = ["read", "write", "begin","beginRO", "end", "r", "w", "dump"]
     def __init__(self, id, sites) -> None:
         self.id = id
         self.tick = 0
@@ -29,11 +29,11 @@ class TaskManager:
             params = [param.strip() for param in params.split(',')]
             # TODO: check params
             self.begin(params[0].strip())
-        elif instruction in ['R', 'read']:
+        elif instruction in ['r', 'read']:
             tid, vid = [param.strip() for param in params.split(',')]
             self.operations_queue.append(('R', (tid, vid)))
             # return self.R(tid, vid)
-        elif instruction in ['W', 'write']:
+        elif instruction in ['w', 'write']:
             tid, vid, value = [param.strip() for param in params.split(',')]
             self.operations_queue.append(('W', (tid, vid, value)))
             # self.W(tid, vid, value)
@@ -132,6 +132,7 @@ class TaskManager:
     def abort(self, tid):
         """ commands all sites to abort tid
         """
+        print(f"{tid} aborts")
         t: Transaction = self.transaction_table[tid]
         self.update_wait_for(tid)
         # set the transaction.should_abort to True

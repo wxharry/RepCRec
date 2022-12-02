@@ -47,11 +47,11 @@ def parse_instruction(line, tm, dm_list, tick):
     result = re.findall(pattern, line)
     if len(result) == 1:
         instruction, params = result[0]
-        if instruction in TaskManager.instructions:
+        if instruction.lower() in TaskManager.instructions:
             r = tm.parse_instruction(instruction, params, tick)
             if r :
                 print(r)
-        if instruction in DataManager.instructions:
+        if instruction.lower() in DataManager.instructions:
             r = dm_list[int(params)].parse_instruction(instruction, tick)
             if r:
                 print(r)
@@ -101,7 +101,7 @@ def main():
         print(title)
         while True:
             line = input("> ")
-            if line.lower().strip() == 'exit':
+            if line.lower().strip() in ['exit', 'q', 'quit']:
                 print("Bye~")
                 break
             line = line.strip()
