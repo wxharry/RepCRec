@@ -64,7 +64,7 @@ class DataManager:
                             if fail_time > commit_time:
                                 return None
                     
-                    return commit_value
+                    return variable
         
         return None
 
