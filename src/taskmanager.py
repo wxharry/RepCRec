@@ -22,7 +22,7 @@ class TaskManager:
             self.execute_cmd_queue()
         
         self.tick = tick
-        print(instruction + " " + params)
+        # print(instruction + " " + params)
         if instruction == 'beginRO':
             # : check params
             self.beginRO(params.strip())
@@ -66,9 +66,9 @@ class TaskManager:
                 r = self.R(tid, params[0])
                 if not r and t.should_abort == False:
                     new_queue.append(operation)
-                    print(f"{tid} is waiting because the site is down\n")
-                # else:
-                    # print(r)
+                    # print(f"{tid} is waiting because the site is down\n")
+                else:
+                    print(r)
             elif type == 'W':
                 r = self.W(tid, params[0], params[1])
                 if not r:

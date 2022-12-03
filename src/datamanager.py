@@ -14,6 +14,7 @@ class DataManager:
         self.lock_table = {} # value should be a list of shared read lock or write lock or both
         self.fail_time_list = []
         self.recover_time_list = []
+        self.lock_queue = {}
 
     def parse_instruction(self, instruction, tick):
         if instruction == 'fail':
@@ -38,11 +39,15 @@ class DataManager:
             return self.data_table[vid]
         # if exists a shared lock
         elif lock.isShared():
+            # check if this variable has write lock in the queue
+            # if there is a write lock waiting for the current shared lock, wait til that write finishes
+            if len(self.lock_queue.get(vid, [])) > 0:
+                prev_ts = self.lock_queue[vid]
+                if tid not in prev_ts:
+                    wait_for[tid] = wait_for.get(tid, []) + [prev_ts[-1]]
+                    return None
             lock.acquire(tid)
             return self.data_table[vid]
-            # return variable.commit_values[-1][0]
-            # check if this variable has write lock
-            # if w_lock_queue
         # if exists an exclusive lock and t has access
         elif lock.isExclusive() and lock.hasAccess(tid):
             return transaction.temp_vars.get(vid)
@@ -99,6 +104,8 @@ class DataManager:
         if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and lock.hasAccess(tid) and self.can_promote(tid, lock, wait_for)):
             return True
         print(f"{tid} waits")
+        # add the tid to the lock queue to wait if tid has not been added to the queue
+        self.lock_queue[vid] =  self.lock_queue.get(vid, []) + ([tid] if tid not in self.lock_queue.get(vid, []) else [])
         wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.sharing if not id == tid])))
         return False
 
@@ -135,6 +142,7 @@ class DataManager:
         self.is_up = False
         self.fail_time_list.append(fail_time)
         self.lock_table.clear()
+        self.lock_queue.clear()
 
 
     def recover(self, recover_time):
@@ -148,7 +156,7 @@ class DataManager:
                 self.data_table[vid].access = False
 
     def abort(self, tid):
-        """ release all locks acquired by tid
+        """ release all locks acquired by tid, and remove from lock queue
         """
 
         # release lock
@@ -157,7 +165,10 @@ class DataManager:
                 self.lock_table[vid] = lock.release(tid)
             if not self.lock_table[vid]:
                 self.lock_table.pop(vid)
-        # self.update_lock_table()
+
+        # remove from lock queue
+        for queue in self.lock_queue.values():
+            queue.remove(tid)
 
     def commit(self, t, commit_time):
         tid = t.id
