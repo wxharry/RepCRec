@@ -42,6 +42,10 @@ class TaskManager:
             self.end(params.strip())
         elif instruction == 'dump':
             self.dump()
+        elif instruction == "fail":
+            self.fail(int(params))
+        elif instruction == "recover":
+            self.recover(int(params))
         else:
             print(f"unrecognized command {instruction}, "
                   f"currently support [{', '.join(instruction)}]")
@@ -49,7 +53,7 @@ class TaskManager:
         self.execute_cmd_queue()
     
     def execute_cmd_queue(self):
-        # new_queue = []
+        new_queue = []
         # print(self.operations_queue)
         for operation in self.operations_queue:
             type, params = operation[0], operation[1]
@@ -61,23 +65,22 @@ class TaskManager:
             if type == 'R':
                 r = self.R(tid, params[0])
                 if not r and t.should_abort == False:
+                    new_queue.append(operation)
                     print(f"{tid} is waiting because the site is down\n")
-                # if not r:
-                #     new_queue.append(operation)
-                # else:
-                #     print(r)
+                else:
+                    print(r)
             elif type == 'W':
                 r = self.W(tid, params[0], params[1])
-                # if not r:
-                #     new_queue.append(operation)
+                if not r:
+                    new_queue.append(operation)
             else:
                 raise "Invalid Command: invalid operation.\n"
         # print(new_queue)
-        # self.operations_queue = new_queue
-        if r:
-            self.operations_queue.remove(t)
-        elif not r and t.should_abort == True:
-            self.operations_queue.remove(t)
+        self.operations_queue = new_queue
+        # if r:
+        #     self.operations_queue.remove(t)
+        # elif not r and t.should_abort == True:
+        #     self.operations_queue.remove(t)
         
 
 
@@ -151,7 +154,6 @@ class TaskManager:
         # abort the youngest transaction on each site        
         for site in self.sites.values():
             site.abort(tid)
-        self.transaction_table.pop(tid)
 
     def commit(self, tid):
         """ commands all sites to commit (update temp_vars to variables in sites)
@@ -160,7 +162,6 @@ class TaskManager:
         t = self.transaction_table.get(tid)
         for site in self.sites.values():
             site.commit(t, self.tick)
-        self.transaction_table.pop(tid)
 
     def end(self, tid):
         """ the transaction ends

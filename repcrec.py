@@ -51,10 +51,10 @@ def parse_instruction(line, tm, dm_list, tick):
             r = tm.parse_instruction(instruction, params, tick)
             if r :
                 print(r)
-        if instruction.lower() in DataManager.instructions:
-            r = dm_list[int(params)].parse_instruction(instruction, tick)
-            if r:
-                print(r)
+        # if instruction.lower() in DataManager.instructions:
+        #     r = dm_list[int(params)].parse_instruction(instruction, tick)
+        #     if r:
+        #         print(r)
     else:
         print(f"Error: invalid input format {line}.")
         return None
