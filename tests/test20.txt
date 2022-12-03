@@ -28,3 +28,4 @@ W(T5,x2,90) // T5 doesn't need to wait because T2 hasn't acquired a lock
 // T5 gets a lock x2 in site 1.
 end(T5) // this will commit
 end(T2) // this will commit and the read will return 90
+dump()

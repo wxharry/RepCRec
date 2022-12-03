@@ -49,26 +49,37 @@ class TaskManager:
         self.execute_cmd_queue()
     
     def execute_cmd_queue(self):
-        new_queue = []
+        # new_queue = []
         # print(self.operations_queue)
         for operation in self.operations_queue:
             type, params = operation[0], operation[1]
             tid, *params = params
             t = self.transaction_table.get(tid)
-            if not t or t.should_abort:
+            if not t:
+                self.operations_queue.remove(t)
                 continue
             if type == 'R':
                 r = self.R(tid, params[0])
-                if not r:
-                    new_queue.append(operation)
-                else:
-                    print(r)
+                if not r and t.should_abort == False:
+                    print(f"{tid} is waiting because the site is down\n")
+                # if not r:
+                #     new_queue.append(operation)
+                # else:
+                #     print(r)
             elif type == 'W':
                 r = self.W(tid, params[0], params[1])
-                if not r:
-                    new_queue.append(operation)
+                # if not r:
+                #     new_queue.append(operation)
+            else:
+                raise "Invalid Command: invalid operation.\n"
         # print(new_queue)
-        self.operations_queue = new_queue
+        # self.operations_queue = new_queue
+        if r:
+            self.operations_queue.remove(t)
+        elif not r and t.should_abort == True:
+            self.operations_queue.remove(t)
+        
+
 
     def solve_deadlock(self):
         def findCycle(graph):
@@ -140,6 +151,7 @@ class TaskManager:
         # abort the youngest transaction on each site        
         for site in self.sites.values():
             site.abort(tid)
+        self.transaction_table.pop(tid)
 
     def commit(self, tid):
         """ commands all sites to commit (update temp_vars to variables in sites)
@@ -148,6 +160,7 @@ class TaskManager:
         t = self.transaction_table.get(tid)
         for site in self.sites.values():
             site.commit(t, self.tick)
+        self.transaction_table.pop(tid)
 
     def end(self, tid):
         """ the transaction ends
@@ -175,12 +188,20 @@ class TaskManager:
             for site in t.snapshot.values():
                 if site.is_up and site.data_table.get(vid):
                     result = site.read_only(vid, t.begin_time)
-                    return result
+                    if result:
+                        t.site_access_list.append(site.id)
+                        return result
+            
+            variable = self.data_table[vid]
+            if variable.is_replicated == True:
+                t.abort()
+                return None
         else:
             for site in self.sites.values():
                 if site.is_up and site.data_table.get(vid):
                     r = site.read(self.transaction_table[tid], vid, self.wait_for_graph)
-                    return r
+                    if r:
+                        return r
 
         return None # format only, no meaning
 
@@ -212,6 +233,7 @@ class TaskManager:
         # ready to write
         for site in site_to_write:
             site.write(t, vid)
+            t.site_access_list.append(site.id)
             t.temp_vars[vid] = value
         print(f"{tid} writes {vid}: {value} at {', '.join([f's{site.id}' for site in site_to_write])}")
         return value
@@ -225,7 +247,7 @@ class TaskManager:
         for tid, transaction in self.transaction_table.items():
             if not (transaction.is_read_only or transaction.should_abort):
                 if site_id in transaction.site_access_list:
-                    transaction.should_abort = True
+                    transaction.abort()
                     print(f"Abort transaction {tid}\n")
 
     def recover(self, site_id):

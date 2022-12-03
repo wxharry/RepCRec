@@ -29,6 +29,9 @@ class DataManager:
         lock: Lock = self.lock_table.get(vid, None)
         # variable: Variable = self.data_table.get(vid, None)
         # if no lock on variable vid
+        variable = self.data_table[vid]
+        if variable.access == False:
+            return None
         if not lock:
             shared_lock = SharedLock(vid, tid)
             self.lock_table[vid] = shared_lock
@@ -52,20 +55,20 @@ class DataManager:
         # for completion only
         return None
     
-    def read_only(self, vid, begin_time):
+    def read_only(self, vid, transaction: Transaction, begin_time):
         variable = self.data_table[vid]
         if variable.access:
             for commit_pair in variable.commit_values[::-1]:
                 commit_value = commit_pair[0]
                 commit_time = commit_pair[1]
-                # Upon recovery of a site s, the site makes replicated variables available for writing, but not reading.
                 if commit_time <= begin_time:
+                    # Upon recovery of a site s, the site makes replicated variables available for writing, but not reading.
                     if variable.is_replicated:
                         for fail_time in self.fail_time_list:
                             if fail_time > commit_time:
                                 return None
                     
-                    return variable
+                    return commit_value
         
         return None
 
@@ -105,8 +108,8 @@ class DataManager:
         # variable: Variable = self.data_table.get(vid, None)
         # if no lock on variable vid
         if not lock:
-            shared_lock = ExclusiveLock(vid, tid)
-            self.lock_table[vid] = shared_lock
+            w_lock = ExclusiveLock(vid, tid)
+            self.lock_table[vid] = w_lock
             return self.data_table[vid]
         # if exists a shared lock
         elif lock.isShared():
