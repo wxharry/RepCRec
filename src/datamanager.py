@@ -8,25 +8,27 @@ from src.lock import *
 class DataManager:
     instructions = ["fail", "recover"]
     def __init__(self, id) -> None:
+        # Initialize data manger object
         self.is_up = True
         self.id = id
         self.data_table = {}
-        self.lock_table = {} # value should be a list of shared read lock or write lock or both
+        self.lock_table = {} 
         self.fail_time_list = []
-        self.recover_time_list = []
+        # self.recover_time_list = []
         self.lock_queue = {}
         self.temp_vars = {}
 
-    def parse_instruction(self, instruction, tick):
-        if instruction == 'fail':
-            self.fail(tick)
-        if instruction == 'recover':
-            self.recover(tick)
+    # def parse_instruction(self, instruction, tick):
+    #     if instruction == 'fail':
+    #         self.fail(tick)
+    #     if instruction == 'recover':
+    #         self.recover(tick)
 
     def set_variable(self, var):
         self.data_table[var.id] = var
 
     def has_write_lock_in_queue(self, vid):
+        # see if queue has write lock
         for l in self.lock_queue.get(vid, []):
             if l.lock_type == LockType.W:
                 return True
@@ -37,10 +39,13 @@ class DataManager:
         tid = transaction.id
         lock: Lock = self.lock_table.get(vid, None)
         # variable: Variable = self.data_table.get(vid, None)
-        # if no lock on variable vid
         variable = self.data_table[vid]
+
+        # check if replicated variable has access to read 
         if variable.access == False:
             return None
+
+        # if no lock on variable vid
         if not lock:
             shared_lock = SharedLock(vid, tid)
             self.lock_table[vid] = shared_lock
@@ -50,10 +55,10 @@ class DataManager:
             # if lock has this transaction, then it can directly read
             if tid in lock.tids:
                 return variable
+
             # check if this variable has write lock in the queue
             # if there is a write lock waiting for the current shared lock, wait til that write finishes
             if self.has_write_lock_in_queue(vid):
-            # if len(self.lock_queue.get(vid, [])) > 0:
                 shared_lock = SharedLock(vid, tid)
                 self.lock_queue[vid].add(shared_lock)
                 prev_ts = self.lock_queue[vid]
@@ -61,18 +66,18 @@ class DataManager:
                 if tid not in prev_ts:
                     wait_for[tid] = wait_for.get(tid, []) + [prev_ts[-1]]
                     return None
+
+            # else directly get read lock
             lock.acquire(tid)
             return variable
         # if exists an exclusive lock and t has access
         elif lock.isExclusive() and lock.hasAccess(tid):
-            # return transaction.temp_vars.get(vid)
             # return commit value instead of temp value
             return variable
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
             print(f"{tid} waits because of a lock conflict")
             shared_lock = SharedLock(vid, tid)
-            # self.lock_queue[vid].add(shared_lock)
             self.lock_queue[vid] = self.lock_queue.get(vid, []) + [shared_lock]
             wait_for[tid] = wait_for.get(tid, []) + lock.tids
             return None
@@ -110,7 +115,9 @@ class DataManager:
         wait_for[tid] = list(set(wait_for.get(tid, []) + ([id for id in waiters if not id == tid])))
         return False
 
+
     def add_lock_to_queue(self, lock, vid):
+        # add write lock to queue only if the queue has same type of lock for the same tid
         locks = self.lock_queue.get(vid, [])
         for l in locks:
             if l.lock_type == lock.lock_type and l.tids == lock.tids:
@@ -132,7 +139,7 @@ class DataManager:
         # print("can promote", self.can_promote(tid, lock, wait_for))
         if (lock.isExclusive() and lock.hasAccess(tid)) or (lock.isShared() and lock.hasAccess(tid) and self.can_promote(tid, lock, wait_for)):
             return True
-        print(f"{tid} waits")
+        print(f"{tid} waits because of a lock conflict")
         # add the tid to the lock queue to wait if tid has not been added to the queue
         # self.lock_queue[vid] =  self.lock_queue.get(vid, []) + ([lock] if lock.tid not in self.lock_queue.get(vid, []) else [])
         self.add_lock_to_queue(lock, vid)
@@ -176,7 +183,9 @@ class DataManager:
             return "Invalid Command: trying to fail a down site."
         self.is_up = False
         self.fail_time_list.append(fail_time)
+        # If that site fails, the lock table is erased.
         self.lock_table.clear()
+        # Also empty the lock queue
         self.lock_queue.clear()
 
 
@@ -184,7 +193,6 @@ class DataManager:
         if self.is_up:
             return "Invalid Command: trying to recover a up site."
         self.is_up = True
-        self.recover_time_list.append(recover_time)
         for vid, variable in self.data_table.items():
             # replicated variables are not readable when site recovers
             if variable.is_replicated:

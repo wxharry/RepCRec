@@ -18,28 +18,21 @@ class TaskManager:
     def parse_instruction(self, instruction, params, tick):
         # if solve deadlock, process queued operations
         while self.solve_deadlock():
-            # print("solve deadlock")
             self.execute_cmd_queue()
         
         self.tick = tick
-        # print(instruction + " " + params)
         if instruction == 'beginRO':
-            # : check params
             self.beginRO(params.strip())
         elif instruction == 'begin':
             params = [param.strip() for param in params.split(',')]
-            # TODO: check params
             self.begin(params[0].strip())
         elif instruction == "R":
             tid, vid = [param.strip() for param in params.split(',')]
             self.operations_queue.append(('R', (tid, vid)))
-            # return self.R(tid, vid)
         elif instruction == "W":
             tid, vid, value = [param.strip() for param in params.split(',')]
             self.operations_queue.append(('W', (tid, vid, value)))
-            # self.W(tid, vid, value)
         elif instruction == 'end':
-            # TODO: params check
             self.end(params.strip())
         elif instruction == 'dump':
             self.dump()
@@ -55,7 +48,6 @@ class TaskManager:
     
     def execute_cmd_queue(self):
         new_queue = []
-        # print(self.operations_queue)
         for operation in self.operations_queue:
             type, params = operation[0], operation[1]
             tid, *params = params
@@ -66,7 +58,6 @@ class TaskManager:
                 r = self.R(tid, params[0])
                 if not r and t.should_abort == False:
                     new_queue.append(operation)
-                    # print(f"{tid} is waiting because the site is down\n")
                 else:
                     print(r)
             elif type == 'W':
@@ -75,12 +66,8 @@ class TaskManager:
                     new_queue.append(operation)
             else:
                 raise "Invalid Command: invalid operation.\n"
-        # print(new_queue)
         self.operations_queue = new_queue
-        # if r:
-        #     self.operations_queue.remove(t)
-        # elif not r and t.should_abort == True:
-        #     self.operations_queue.remove(t)
+
         
 
 
@@ -105,7 +92,6 @@ class TaskManager:
             return cycles
 
         wait_for_graph = self.wait_for_graph
-        # print("wait for graph", wait_for_graph)
         # find cycles in wait-for graph
         cycles = findCycle(wait_for_graph)
         # if no cycle found, return False
@@ -114,7 +100,6 @@ class TaskManager:
         # find the youngest transaction
         cycle = cycles[0]
         youngest_transaction = max(cycle, key=lambda tid: self.transaction_table[tid].begin_time)
-        # print(f"abort transaction {youngest_transaction}")
         self.abort(youngest_transaction)
         return True
 
@@ -163,8 +148,8 @@ class TaskManager:
             site.commit(tid, self.tick)
 
     def execute_transactions(self, tid):
-        # test20
-        
+        # In end function, check if there is read request for tid in operation queue     
+        # If so, execute it  
         for operation in self.operations_queue:
             request = operation[0]
             t_id = operation[1][0]
@@ -184,15 +169,11 @@ class TaskManager:
             print(f"No transaction {tid} is found in transaction table")
             return None
         # abort it t is set should_abort
-        # print(self.operations_queue, tid)
         if t.should_abort:
             self.abort(tid)
         # commit to all sites
         else:                
-            # TODO: some sites could be failed
             self.execute_transactions(tid)
-            # if (r):
-            #     print(r)
             self.commit(tid)
         return self.transaction_table.pop(tid)
 
@@ -210,10 +191,12 @@ class TaskManager:
                         return result
             
             variable = self.data_table[vid]
+            # if read none from the site and the variable is replicated, then abort
             if variable.is_replicated == True:
                 t.abort()
                 return None
-            print(f"{tid} is waiting because the site is down\n")
+            # else wait until the site is up
+            # print(f"{tid} is waiting because the site is down\n")
         else:
             for site in self.sites.values():
                 if site.is_up and site.data_table.get(vid):
@@ -221,7 +204,8 @@ class TaskManager:
                     if r:
                         t.site_access_list.append(site.id)
                         return r
-
+        # else wait until the site is up
+        print(f"{tid} is waiting because the site is down")
         return None # format only, no meaning
 
     def W(self, tid, vid, value):
@@ -262,7 +246,10 @@ class TaskManager:
         site = self.sites[site_id]
         site.fail(self.tick)
         # print(f"site {site_id} fails at time {self.tick}")
+        # check if the site has been accessed by some transactions
+        # if so, abort it
         for tid, transaction in self.transaction_table.items():
+            # if transaction is readonly or should_abort is true, then no need to abort
             if not (transaction.is_read_only or transaction.should_abort):
                 if site_id in transaction.site_access_list:
                     transaction.abort()

@@ -1,0 +1,14 @@
+// Test 24
+// T1 waits to read value after recover site 2
+// T2 read commit value instead of temp value
+begin(T1)
+begin(T2)
+fail(2)
+R(T1,x1)
+W(T2,x8,88) 
+R(T2,x8)
+R(T1, x5)
+end(T2)
+recover(2)
+end(T1)
+dump()
