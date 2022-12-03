@@ -199,8 +199,13 @@ class DataManager:
 
         # remove from lock queue
         for queue in self.lock_queue.values():
-            if tid in queue:
-                queue.remove(tid)
+            new_queue = []
+            for lock in queue:
+                new_lock = lock.release(tid)
+                if new_lock:
+                    new_queue.append(new_lock)
+            queue = new_queue
+            
         if tid in self.temp_vars:
             self.temp_vars.pop(tid)
 
@@ -212,8 +217,12 @@ class DataManager:
         
         # remove from lock queue
         for queue in self.lock_queue.values():
-            if tid in queue:
-                queue.remove(tid)
+            new_queue = []
+            for lock in queue:
+                new_lock = lock.release(tid)
+                if new_lock:
+                    new_queue.append(new_lock)
+            queue = new_queue
 
         # update new values to the variables in data_table
         if self.temp_vars.get(tid):
