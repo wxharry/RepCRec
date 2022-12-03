@@ -65,11 +65,15 @@ class DataManager:
             return variable
         # if exists an exclusive lock and t has access
         elif lock.isExclusive() and lock.hasAccess(tid):
-            return transaction.temp_vars.get(vid)
+            # return transaction.temp_vars.get(vid)
+            # return commit value instead of temp value
+            return variable
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
             print(f"{tid} waits because of a lock conflict")
-            self.lock_queue[vid] = self.lock_queue.get(vid, []) + [lock]
+            shared_lock = SharedLock(vid, tid)
+            # self.lock_queue[vid].add(shared_lock)
+            self.lock_queue[vid] = self.lock_queue.get(vid, []) + [shared_lock]
             wait_for[tid] = wait_for.get(tid, []) + lock.tids
             return None
 
