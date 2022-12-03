@@ -112,24 +112,29 @@ class DataManager:
         return False
 
     def write(self, tid, vid, value):
-        self.temp_vars[vid] = value
         lock: Lock = self.lock_table.get(vid, None)
         # variable: Variable = self.data_table.get(vid, None)
         # if no lock on variable vid
         if not lock:
             w_lock = ExclusiveLock(vid, tid)
             self.lock_table[vid] = w_lock
-            return self.data_table[vid]
+            self.temp_vars[tid] = self.temp_vars.get(tid, {})
+            self.temp_vars[tid][vid] = value
+            return value
         # if exists a shared lock
         elif lock.isShared():
             self.lock_table[vid] = lock.promote(tid)
-            return self.data_table[vid]
+            self.temp_vars[tid] = self.temp_vars.get(tid, {})
+            self.temp_vars[tid][vid] = value
+            return value
             # return variable.commit_values[-1][0]
             # check if this variable has write lock
             # if w_lock_queue
         # if exists an exclusive lock and t has access
         elif lock.isExclusive() and lock.hasAccess(tid):
-            return self.temp_vars.get(vid)
+            self.temp_vars[tid] = self.temp_vars.get(tid, {})
+            self.temp_vars[tid][vid] = value
+            return value
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
             return None
@@ -172,6 +177,8 @@ class DataManager:
         for queue in self.lock_queue.values():
             if tid in queue:
                 queue.remove(tid)
+        if tid in self.temp_vars:
+            self.temp_vars.pop(tid)
 
     def commit(self, tid, commit_time):
         # release current lock for tid
@@ -185,10 +192,11 @@ class DataManager:
                 queue.remove(tid)
 
         # update new values to the variables in data_table
-        for vid, val in self.temp_vars.items():
-            var:Variable = self.data_table.get(vid)
-            if var:
-                var.add_commit_value(val, commit_time)
+        if self.temp_vars.get(tid):
+            for vid, val in self.temp_vars[tid].items():
+                var:Variable = self.data_table.get(vid)
+                if var:
+                    var.add_commit_value(val, commit_time)
 
     def dump(self):
         print(f"site {self.id}",

@@ -154,14 +154,13 @@ class TaskManager:
         # abort the youngest transaction on each site        
         for site in self.sites.values():
             site.abort(tid)
-
+        
     def commit(self, tid):
         """ commands all sites to commit (update temp_vars to variables in sites)
         """
         print(f"{tid} commits")
-        t = self.transaction_table.get(tid)
         for site in self.sites.values():
-            site.commit(t, self.tick)
+            site.commit(tid, self.tick)
 
     def end(self, tid):
         """ the transaction ends
