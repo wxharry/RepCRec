@@ -16,6 +16,20 @@ options:
   -i, --interactive  enter interactive mode(enter exit to quit)
 ```
 
+You can run our project using a INPUT_FILE
+``` bash
+python3 repcrec.py INPUT_FILE
+```
+Or, you can run commands in interactive mode
+``` bash
+python3 repcrec.py -i # enter interactive mode
+```
+
+We also have a test-for-all script `test.py`. You can run it to generate outputs for all the test cases
+``` bash
+python3 test.py
+```
+
 ## Example
 
 Run `repcrec` as a Python script
