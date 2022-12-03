@@ -1,11 +1,10 @@
 T1 writes x2: 9 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
-Abort transaction T1
-
 T1 aborts
 T3 writes x2: 100 at s2, s3, s4, s5, s6, s7, s8, s9, s10
 T3 commits
 T5 writes x2: 90 at s1
 T5 commits
+x2: 90
 T2 commits
 site 1 - x2: 90, x4: 40, x6: 60, x8: 80, x10: 100, x12: 120, x14: 140, x16: 160, x18: 180, x20: 200
 site 2 - x1: 10, x2: 100, x4: 40, x6: 60, x8: 80, x10: 100, x11: 110, x12: 120, x14: 140, x16: 160, x18: 180, x20: 200

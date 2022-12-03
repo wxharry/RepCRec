@@ -1,8 +1,5 @@
 x3: 30
 T2 writes x8: 88 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
-Abort transaction T2
-
-x3: 30
 T1 writes x4: 91 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
 T2 aborts
 T1 commits
