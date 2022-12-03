@@ -42,7 +42,7 @@ def parse_instruction(line, tm, dm_list, tick):
     if not line:
         return
 
-    print(line)
+    # print(line)
     pattern = "(.*)\((.*)\)"
     result = re.findall(pattern, line)
     if len(result) == 1:

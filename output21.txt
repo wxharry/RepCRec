@@ -1,3 +1,4 @@
+x2: 20
 T1 waits
 T1 waits
 T2 waits

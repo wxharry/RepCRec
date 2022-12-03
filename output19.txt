@@ -1,5 +1,10 @@
+x3: 30
 Abort transaction T3
 
+x4: 40
+x5: 50
+x6: 60
+x2: 20
 T1 waits
 T1 waits
 T2 writes x3: 20 at s4

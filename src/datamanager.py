@@ -230,6 +230,7 @@ class DataManager:
                 var:Variable = self.data_table.get(vid)
                 if var:
                     var.add_commit_value(val, commit_time)
+                    var.access = True
 
     def dump(self):
         print(f"site {self.id}",

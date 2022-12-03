@@ -60,7 +60,7 @@ class TaskManager:
             type, params = operation[0], operation[1]
             tid, *params = params
             t = self.transaction_table.get(tid)
-            if not t:
+            if not t or t.should_abort == True:
                 continue
             if type == 'R':
                 r = self.R(tid, params[0])
@@ -162,6 +162,20 @@ class TaskManager:
         for site in self.sites.values():
             site.commit(tid, self.tick)
 
+    def execute_transactions(self, tid):
+        # test20
+        
+        for operation in self.operations_queue:
+            request = operation[0]
+            t_id = operation[1][0]
+            vid = operation[1][1]
+            if tid == t_id and request == "R":
+                r = self.R(tid, vid)
+                if (r):
+                    print(r)
+        # return r
+
+
     def end(self, tid):
         """ the transaction ends
         """
@@ -170,11 +184,15 @@ class TaskManager:
             print(f"No transaction {tid} is found in transaction table")
             return None
         # abort it t is set should_abort
+        # print(self.operations_queue, tid)
         if t.should_abort:
             self.abort(tid)
         # commit to all sites
         else:                
             # TODO: some sites could be failed
+            self.execute_transactions(tid)
+            # if (r):
+            #     print(r)
             self.commit(tid)
         return self.transaction_table.pop(tid)
 
@@ -248,7 +266,7 @@ class TaskManager:
             if not (transaction.is_read_only or transaction.should_abort):
                 if site_id in transaction.site_access_list:
                     transaction.abort()
-                    print(f"Abort transaction {tid}\n")
+                    # print(f"Abort transaction {tid}")
 
     def recover(self, site_id):
         if site_id < 1 or site_id > 10: 
