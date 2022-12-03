@@ -15,6 +15,7 @@ class DataManager:
         self.fail_time_list = []
         self.recover_time_list = []
         self.lock_queue = {}
+        self.temp_vars = {}
 
     def parse_instruction(self, instruction, tick):
         if instruction == 'fail':
@@ -72,8 +73,9 @@ class DataManager:
                         for fail_time in self.fail_time_list:
                             if fail_time > commit_time:
                                 return None
-                    
-                    return commit_value
+                    # make a new variable for output only
+                    # add an arbitrary tick 
+                    return Variable(vid, commit_value, -1)
         
         return None
 
@@ -109,8 +111,8 @@ class DataManager:
         wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.sharing if not id == tid])))
         return False
 
-    def write(self, transaction, vid):
-        tid = transaction.id
+    def write(self, tid, vid, value):
+        self.temp_vars[vid] = value
         lock: Lock = self.lock_table.get(vid, None)
         # variable: Variable = self.data_table.get(vid, None)
         # if no lock on variable vid
@@ -127,7 +129,7 @@ class DataManager:
             # if w_lock_queue
         # if exists an exclusive lock and t has access
         elif lock.isExclusive() and lock.hasAccess(tid):
-            return transaction.temp_vars.get(vid)
+            return self.temp_vars.get(vid)
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
             return None
@@ -168,10 +170,10 @@ class DataManager:
 
         # remove from lock queue
         for queue in self.lock_queue.values():
-            queue.remove(tid)
+            if tid in queue:
+                queue.remove(tid)
 
-    def commit(self, t, commit_time):
-        tid = t.id
+    def commit(self, tid, commit_time):
         # release current lock for tid
         for id, lock in list(self.lock_table.items()):
             if lock and lock.hasAccess(tid):
@@ -179,10 +181,11 @@ class DataManager:
         
         # remove from lock queue
         for queue in self.lock_queue.values():
-            queue.remove(tid)
+            if tid in queue:
+                queue.remove(tid)
 
         # update new values to the variables in data_table
-        for vid, val in t.temp_vars.items():
+        for vid, val in self.temp_vars.items():
             var:Variable = self.data_table.get(vid)
             if var:
                 var.add_commit_value(val, commit_time)

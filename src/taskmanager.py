@@ -227,16 +227,15 @@ class TaskManager:
                 # is down or
                 # cannot acquire write lock,
                 # fail the write command
-                else:
+                elif not can_write:
                     # fail to write, set list site_to_write to empty
                     site_to_write = []
                     # print(f"{tid} fails to write {vid}")
                     return None
         # ready to write
         for site in site_to_write:
-            site.write(t, vid)
+            site.write(tid, vid, value)
             t.site_access_list.append(site.id)
-            t.temp_vars[vid] = value
         print(f"{tid} writes {vid}: {value} at {', '.join([f's{site.id}' for site in site_to_write])}")
         return value
 
