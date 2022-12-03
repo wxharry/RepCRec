@@ -1,10 +1,10 @@
 T3 writes x2: 10 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
-T1 waits
-T1 waits
-T2 waits
+T1 waits because of a lock conflict
+T1 waits because of a lock conflict
+T2 waits because of a lock conflict
 T3 commits
 T1 writes x2: 10 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
-T2 waits
+T2 waits because of a lock conflict
 T1 commits
 T2 writes x2: 10 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
 T2 commits

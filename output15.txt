@@ -1,27 +1,27 @@
 T1 writes x4: 5 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
-T2 waits
-T2 waits
-T2 waits
-T3 waits
-T2 waits
-T3 waits
-T4 waits
-T2 waits
-T3 waits
-T4 waits
-T5 waits
+T2 waits because of a lock conflict
+T2 waits because of a lock conflict
+T2 waits because of a lock conflict
+T3 waits because of a lock conflict
+T2 waits because of a lock conflict
+T3 waits because of a lock conflict
+T4 waits because of a lock conflict
+T2 waits because of a lock conflict
+T3 waits because of a lock conflict
+T4 waits because of a lock conflict
+T5 waits because of a lock conflict
 T1 aborts
 T2 writes x4: 44 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
-T3 waits
-T4 waits
-T5 waits
+T3 waits because of a lock conflict
+T4 waits because of a lock conflict
+T5 waits because of a lock conflict
 T2 commits
 T3 writes x4: 55 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
-T4 waits
-T5 waits
+T4 waits because of a lock conflict
+T5 waits because of a lock conflict
 T3 commits
 T4 writes x4: 66 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
-T5 waits
+T5 waits because of a lock conflict
 T4 commits
 T5 writes x4: 77 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
 T5 commits

@@ -1,6 +1,7 @@
 T3 writes x2: 22 at s1, s2, s3, s4, s5, s6, s7, s8, s9, s10
 T2 writes x3: 44 at s4
 T3 waits because of a lock conflict
+T3 is waiting because the site is down
 T2 commits
 x3: 44
 T3 aborts

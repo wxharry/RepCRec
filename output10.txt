@@ -10,6 +10,7 @@ T3 waits because of a lock conflict
 T3 waits because of a lock conflict
 T3 waits because of a lock conflict
 T3 waits because of a lock conflict
+T3 is waiting because the site is down
 T2 commits
 x4: 44
 T3 commits
