@@ -176,6 +176,10 @@ class DataManager:
         for id, lock in list(self.lock_table.items()):
             if lock and lock.hasAccess(tid):
                 self.lock_table[id] = lock.release(tid)
+        
+        # remove from lock queue
+        for queue in self.lock_queue.values():
+            queue.remove(tid)
 
         # update new values to the variables in data_table
         for vid, val in t.temp_vars.items():
