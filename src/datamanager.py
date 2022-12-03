@@ -25,6 +25,8 @@ class DataManager:
 
     def set_variable(self, var):
         self.data_table[var.id] = var
+
+    # def has_write_lock_in_queue()
     
     def read(self, transaction:Transaction, vid, wait_for):
         tid = transaction.id
@@ -85,11 +87,18 @@ class DataManager:
         """ returns if tid can promote on a shared lock
         """
         waiters = [waiter for waiter, occupants in wait_for.items() if tid in occupants]
-        if lock.isShared() and lock.hasAccess(tid) and len(lock.sharing) == 1 \
+        if lock.isShared() and lock.hasAccess(tid) and len(lock.tids) == 1 \
             and len(waiters) == 0:
             return True
         wait_for[tid] = list(set(wait_for.get(tid, []) + ([id for id in waiters if not id == tid])))
         return False
+
+    def add_lock_to_queue(self, lock, vid):
+        for l in self.lock_queue[vid]:
+            if l.lock_type == lock.lock_type and l.tids == lock.tids:
+                return
+        self.lock_queue[vid].append(lock)
+                
 
     def can_write(self, tid, vid, wait_for):
         """ returns if tid can acquire write lock on vid
@@ -107,8 +116,9 @@ class DataManager:
             return True
         print(f"{tid} waits")
         # add the tid to the lock queue to wait if tid has not been added to the queue
-        self.lock_queue[vid] =  self.lock_queue.get(vid, []) + ([tid] if tid not in self.lock_queue.get(vid, []) else [])
-        wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.sharing if not id == tid])))
+        # self.lock_queue[vid] =  self.lock_queue.get(vid, []) + ([lock] if lock.tid not in self.lock_queue.get(vid, []) else [])
+        self.add_lock_to_queue(lock, vid)
+        wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.tids if not id == tid])))
         return False
 
     def write(self, tid, vid, value):
