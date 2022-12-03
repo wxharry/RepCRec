@@ -189,7 +189,6 @@ class TaskManager:
                 if site.is_up and site.data_table.get(vid):
                     result = site.read_only(vid, t.begin_time)
                     if result:
-                        t.site_access_list.append(site.id)
                         return result
             
             variable = self.data_table[vid]
@@ -201,6 +200,7 @@ class TaskManager:
                 if site.is_up and site.data_table.get(vid):
                     r = site.read(self.transaction_table[tid], vid, self.wait_for_graph)
                     if r:
+                        t.site_access_list.append(site.id)
                         return r
 
         return None # format only, no meaning

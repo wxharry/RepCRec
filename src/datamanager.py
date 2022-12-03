@@ -55,7 +55,7 @@ class DataManager:
         # for completion only
         return None
     
-    def read_only(self, vid, transaction: Transaction, begin_time):
+    def read_only(self, vid, begin_time):
         variable = self.data_table[vid]
         if variable.access:
             for commit_pair in variable.commit_values[::-1]:
