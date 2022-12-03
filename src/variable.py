@@ -3,19 +3,26 @@ defines class Variable
 """
 class Variable:
     def __init__(self, vid, commit_value, commit_time, is_replicated=False):
+        """ 
+            Description: initialize Variable Object
+            Input: variable id, commit value, commit time stamp, is replicated flag
+            Output: None
+            Date: 11/28/2022
+            Author: Yulin Hu
+        """
         # assert id <= 20 and id >= 1
         self.id = vid
         # self.value = value
         self.is_replicated = is_replicated
         self.commit_values = [(commit_value, commit_time)]
-        self.temp_value = None # format (value, tid)
+        # self.temp_value = None # format (value, tid)
         self.access = True
 
     def get_recent_value(self):
         return self.commit_values[-1][0]
     
-    def get_temp_value(self):
-        return self.temp_value
+    # def get_temp_value(self):
+    #     return self.temp_value
     
     def add_commit_value(self, value: int, ts):
         self.commit_values.append((value, ts))

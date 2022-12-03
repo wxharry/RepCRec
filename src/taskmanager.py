@@ -180,6 +180,13 @@ class TaskManager:
         return self.transaction_table.pop(tid)
 
     def R(self, tid, vid):
+        """ 
+            Description: execute read instruction on variable x for transaction tid
+            Input: transaction id, variable id
+            Output: Variable Object if succeeds or None if fails
+            Date: 12/3/2022
+            Author: Yulin Hu, Xiaohan Wu
+        """
         t:Transaction = self.transaction_table.get(tid)
         if not t:
             # print(f"No transaction {tid} is found in transaction table")
@@ -274,6 +281,13 @@ class TaskManager:
         return value
 
     def fail(self, site_id):
+        """ 
+            Description: fail site s with site id
+            Input: site id
+            Output: None
+            Date: 12/1/2022
+            Author: Yulin Hu
+        """
         if site_id < 1 or site_id > 10: 
             raise "Invalid Command: invalid site id.\n"
         site = self.sites[site_id]
@@ -289,10 +303,17 @@ class TaskManager:
                     # print(f"Abort transaction {tid}")
 
     def recover(self, site_id):
+        """ 
+            Description: recover site s with site id
+            Input: site id
+            Output: None
+            Date: 12/1/2022
+            Author: Yulin Hu
+        """       
         if site_id < 1 or site_id > 10: 
             raise "Invalid Command: invalid site id.\n"
         site = self.sites[site_id]
-        site.recover(self.tick)
+        site.recover()
         # print(f"site {site_id} fails at time {self.tick}")
 
     def dump(self):

@@ -8,6 +8,13 @@ from src.lock import *
 class DataManager:
     instructions = ["fail", "recover"]
     def __init__(self, id) -> None:
+        """ 
+            Description: initialize data manager object
+            Input: site id
+            Output: None
+            Date: 12/1/2022
+            Author: Yulin Hu, Xiaohan Wu
+        """
         # Initialize data manger object
         self.is_up = True
         self.id = id
@@ -36,6 +43,13 @@ class DataManager:
 
     
     def read(self, transaction:Transaction, vid, wait_for):
+        """ 
+            Description: execute read operation within data manager
+            Input: Transaction Object, variable id, wait for graph
+            Output: Variable Object if succeeds or None if it fails
+            Date: 12/3/2022
+            Author: Yulin Hu, Xiaohan Wu
+        """
         tid = transaction.id
         lock: Lock = self.lock_table.get(vid, None)
         # variable: Variable = self.data_table.get(vid, None)
@@ -86,6 +100,13 @@ class DataManager:
         return None
     
     def read_only(self, vid, begin_time):
+        """ 
+            Description: execute readonly operation within data manager
+            Input: variable id, begin timestamp
+            Output: Variable Object if succeeds or None if fails
+            Date: 12/1/2022
+            Author: Yulin Hu
+        """
         variable = self.data_table[vid]
         if variable.access:
             for commit_pair in variable.commit_values[::-1]:
@@ -117,7 +138,14 @@ class DataManager:
 
 
     def add_lock_to_queue(self, lock, vid):
-        # add write lock to queue only if the queue has same type of lock for the same tid
+        """ 
+            Description: add write lock to lock queue
+            Input: Lock Object, variable id
+            Output: None
+            Date: 12/2/2022
+            Author: Yulin Hu
+        """
+        # add write lock to queue only if the queue doesn't have same type of lock for the same tid
         locks = self.lock_queue.get(vid, [])
         for l in locks:
             if l.lock_type == lock.lock_type and l.tids == lock.tids:
@@ -179,6 +207,13 @@ class DataManager:
 
 
     def fail(self, fail_time):
+        """ 
+            Description: fail the site
+            Input: fail timestamp
+            Output: None
+            Date: 12/1/2022
+            Author: Yulin Hu
+        """
         if not self.is_up:
             return "Invalid Command: trying to fail a down site."
         self.is_up = False
@@ -189,7 +224,14 @@ class DataManager:
         self.lock_queue.clear()
 
 
-    def recover(self, recover_time):
+    def recover(self):
+        """ 
+            Description: recover the site
+            Input: None
+            Output: None
+            Date: 12/1/2022
+            Author: Yulin Hu
+        """
         if self.is_up:
             return "Invalid Command: trying to recover a up site."
         self.is_up = True
