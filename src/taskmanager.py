@@ -60,7 +60,6 @@ class TaskManager:
             tid, *params = params
             t = self.transaction_table.get(tid)
             if not t:
-                self.operations_queue.remove(t)
                 continue
             if type == 'R':
                 r = self.R(tid, params[0])
