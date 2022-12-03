@@ -196,6 +196,7 @@ class TaskManager:
             if variable.is_replicated == True:
                 t.abort()
                 return None
+            print(f"{tid} is waiting because the site is down\n")
         else:
             for site in self.sites.values():
                 if site.is_up and site.data_table.get(vid):
