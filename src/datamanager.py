@@ -26,7 +26,12 @@ class DataManager:
     def set_variable(self, var):
         self.data_table[var.id] = var
 
-    # def has_write_lock_in_queue()
+    def has_write_lock_in_queue(self, vid):
+        for l in self.lock_queue[vid]:
+            if l.lock_type == LockType.W:
+                return True
+        return False
+
     
     def read(self, transaction:Transaction, vid, wait_for):
         tid = transaction.id
@@ -42,21 +47,29 @@ class DataManager:
             return self.data_table[vid]
         # if exists a shared lock
         elif lock.isShared():
+            # if lock has this transaction, then it can directly read
+            if tid in lock.tids:
+                return variable.commit_values[-1][0]
             # check if this variable has write lock in the queue
             # if there is a write lock waiting for the current shared lock, wait til that write finishes
-            if len(self.lock_queue.get(vid, [])) > 0:
+            if self.has_write_lock_in_queue(vid):
+            # if len(self.lock_queue.get(vid, [])) > 0:
+                shared_lock = SharedLock(vid, tid)
+                self.lock_queue[vid].add(shared_lock)
                 prev_ts = self.lock_queue[vid]
+                print(f"{tid} waits because of a lock conflict")
                 if tid not in prev_ts:
                     wait_for[tid] = wait_for.get(tid, []) + [prev_ts[-1]]
                     return None
             lock.acquire(tid)
-            return self.data_table[vid]
+            return variable.commit_values[-1][0]
         # if exists an exclusive lock and t has access
         elif lock.isExclusive() and lock.hasAccess(tid):
             return transaction.temp_vars.get(vid)
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
-            print(f"{tid} waits")
+            print(f"{tid} waits because of a lock conflict")
+            self.lock_queue[vid].add(shared_lock)
             wait_for[tid] = wait_for.get(tid, []) + lock.tids
             return None
 
