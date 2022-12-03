@@ -6,7 +6,7 @@ from src.variable import *
 from copy import deepcopy
 
 class TaskManager:
-    instructions = ["read", "write", "begin","beginRO", "end", "r", "w", "dump"]
+    instructions = ["begin","beginRO", "end", "R", "W", "dump", "fail", "recover"]
     def __init__(self, id, sites) -> None:
         self.id = id
         self.tick = 0
@@ -22,6 +22,7 @@ class TaskManager:
             self.execute_cmd_queue()
         
         self.tick = tick
+        print(instruction + " " + params)
         if instruction == 'beginRO':
             # : check params
             self.beginRO(params.strip())
@@ -29,11 +30,11 @@ class TaskManager:
             params = [param.strip() for param in params.split(',')]
             # TODO: check params
             self.begin(params[0].strip())
-        elif instruction in ['r', 'read']:
+        elif instruction == "R":
             tid, vid = [param.strip() for param in params.split(',')]
             self.operations_queue.append(('R', (tid, vid)))
             # return self.R(tid, vid)
-        elif instruction in ['w', 'write']:
+        elif instruction == "W":
             tid, vid, value = [param.strip() for param in params.split(',')]
             self.operations_queue.append(('W', (tid, vid, value)))
             # self.W(tid, vid, value)
@@ -66,8 +67,8 @@ class TaskManager:
                 if not r and t.should_abort == False:
                     new_queue.append(operation)
                     print(f"{tid} is waiting because the site is down\n")
-                else:
-                    print(r)
+                # else:
+                    # print(r)
             elif type == 'W':
                 r = self.W(tid, params[0], params[1])
                 if not r:
@@ -243,7 +244,7 @@ class TaskManager:
             raise "Invalid Command: invalid site id.\n"
         site = self.sites[site_id]
         site.fail(self.tick)
-        print(f"site {site_id} fails at time {self.tick}\n")
+        # print(f"site {site_id} fails at time {self.tick}")
         for tid, transaction in self.transaction_table.items():
             if not (transaction.is_read_only or transaction.should_abort):
                 if site_id in transaction.site_access_list:
@@ -255,7 +256,7 @@ class TaskManager:
             raise "Invalid Command: invalid site id.\n"
         site = self.sites[site_id]
         site.recover(self.tick)
-        print(f"site {site_id} fails at time {self.tick}\n")
+        # print(f"site {site_id} fails at time {self.tick}")
 
     def dump(self):
         for dm in self.sites.values():

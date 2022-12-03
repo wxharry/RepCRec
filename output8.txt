@@ -1,4 +1,4 @@
 T1 writes x3: 33 at s4
 T1 commits
-No transaction T2 is found in transaction table
-No transaction T3 is found in transaction table
+T2 commits
+T3 commits

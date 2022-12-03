@@ -47,8 +47,8 @@ def parse_instruction(line, tm, dm_list, tick):
     result = re.findall(pattern, line)
     if len(result) == 1:
         instruction, params = result[0]
-        if instruction.lower() in TaskManager.instructions:
-            r = tm.parse_instruction(instruction.lower(), params, tick)
+        if instruction in TaskManager.instructions:
+            r = tm.parse_instruction(instruction, params, tick)
             if r :
                 print(r)
         # if instruction.lower() in DataManager.instructions:
