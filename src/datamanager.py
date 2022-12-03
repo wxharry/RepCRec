@@ -57,7 +57,7 @@ class DataManager:
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
             print(f"{tid} waits")
-            wait_for[tid] = wait_for.get(tid, []) + [lock.tid]
+            wait_for[tid] = wait_for.get(tid, []) + lock.tids
             return None
 
         # for completion only
@@ -94,10 +94,11 @@ class DataManager:
         return False
 
     def add_lock_to_queue(self, lock, vid):
-        for l in self.lock_queue[vid]:
+        locks = self.lock_queue.get(vid, [])
+        for l in locks:
             if l.lock_type == lock.lock_type and l.tids == lock.tids:
                 return
-        self.lock_queue[vid].append(lock)
+        locks.append(lock)
                 
 
     def can_write(self, tid, vid, wait_for):
@@ -118,7 +119,7 @@ class DataManager:
         # add the tid to the lock queue to wait if tid has not been added to the queue
         # self.lock_queue[vid] =  self.lock_queue.get(vid, []) + ([lock] if lock.tid not in self.lock_queue.get(vid, []) else [])
         self.add_lock_to_queue(lock, vid)
-        wait_for[tid] = list(set(wait_for.get(tid, []) + ([lock.tid] if lock.isExclusive() else [id for id in lock.tids if not id == tid])))
+        wait_for[tid] = list(set(wait_for.get(tid, []) + (lock.tids if lock.isExclusive() else [id for id in lock.tids if not id == tid])))
         return False
 
     def write(self, tid, vid, value):

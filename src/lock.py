@@ -23,18 +23,18 @@ class Lock:
 class ExclusiveLock(Lock):
     def __init__(self, variable_id, transaction_id) -> None:
         Lock.__init__(self, variable_id, LockType.Write)
-        self.tids = transaction_id
+        self.tids = [transaction_id]
 
     def acquire(self, tid):
-        self.tid = tid
+        self.tids = [tid]
     
     def release(self, tid):
-        if self.tid == tid:
-            self.tid = ''
+        if self.tids == [tid]:
+            self.tids = []
         return None
 
     def hasAccess(self, tid):
-        return tid == self.tid
+        return [tid] == self.tids
 
 class SharedLock(Lock):
     def __init__(self, variable_id, transaction_id):
