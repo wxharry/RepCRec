@@ -217,6 +217,7 @@ class TaskManager:
             # read replicated value
             r = None
             s = None
+            has_up_sites = False
             for site in self.sites.values():
                 if site.data_table.get(vid) and site.data_table.get(vid).is_replicated == False:
                     replicated_value = False
@@ -226,6 +227,7 @@ class TaskManager:
                     # if variable.is_replicated == False:
                     #     replicated_value = False
                     #     s = site
+                    has_up_sites = True
                     r = site.read(self.transaction_table[tid], vid, self.wait_for_graph)
                     if r:
                         t.site_access_list.append(site.id)
@@ -233,6 +235,10 @@ class TaskManager:
             if replicated_value == False and not r and s.is_up == False:
                 print(f"{tid} is waiting because the site is down")
                 return r
+            if replicated_value == True and not r and has_up_sites == True:
+                print(f"{tid} is waiting because it has no access to read {vid}")
+                return r
+
             print(f"{tid} waits because of a lock conflict")
         
         return None # format only, no meaning
