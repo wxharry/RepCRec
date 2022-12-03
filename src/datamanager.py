@@ -27,7 +27,7 @@ class DataManager:
         self.data_table[var.id] = var
 
     def has_write_lock_in_queue(self, vid):
-        for l in self.lock_queue[vid]:
+        for l in self.lock_queue.get(vid, []):
             if l.lock_type == LockType.W:
                 return True
         return False
@@ -49,7 +49,7 @@ class DataManager:
         elif lock.isShared():
             # if lock has this transaction, then it can directly read
             if tid in lock.tids:
-                return variable.commit_values[-1][0]
+                return variable
             # check if this variable has write lock in the queue
             # if there is a write lock waiting for the current shared lock, wait til that write finishes
             if self.has_write_lock_in_queue(vid):
@@ -62,14 +62,14 @@ class DataManager:
                     wait_for[tid] = wait_for.get(tid, []) + [prev_ts[-1]]
                     return None
             lock.acquire(tid)
-            return variable.commit_values[-1][0]
+            return variable
         # if exists an exclusive lock and t has access
         elif lock.isExclusive() and lock.hasAccess(tid):
             return transaction.temp_vars.get(vid)
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
             print(f"{tid} waits because of a lock conflict")
-            self.lock_queue[vid].add(shared_lock)
+            self.lock_queue[vid] = self.lock_queue.get(vid, []) + [lock]
             wait_for[tid] = wait_for.get(tid, []) + lock.tids
             return None
 
