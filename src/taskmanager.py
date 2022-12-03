@@ -44,10 +44,12 @@ class TaskManager:
             print(f"unrecognized command {instruction}, "
                   f"currently support [{', '.join(instruction)}]")
 
+        # print(instruction, params)
         self.execute_cmd_queue()
     
     def execute_cmd_queue(self):
         new_queue = []
+        # print(self.operations_queue)
         for operation in self.operations_queue:
             type, params = operation[0], operation[1]
             tid, *params = params
@@ -183,29 +185,56 @@ class TaskManager:
             # print(f"No transaction {tid} is found in transaction table")
             return None
         # it t is not readonly, reads from current sites; otherwise reads from the snapshot
+        replicated_value = True
         if t.is_read_only:
             for site in t.snapshot.values():
+                if site.data_table.get(vid) and site.data_table.get(vid).is_replicated == False:
+                    replicated_value = False
                 if site.is_up and site.data_table.get(vid):
                     result = site.read_only(vid, t.begin_time)
                     if result:
                         return result
             
-            variable = self.data_table[vid]
+            # variable = self.data_table[vid]
             # if read none from the site and the variable is replicated, then abort
-            if variable.is_replicated == True:
+            if replicated_value == True:
                 t.abort()
                 return None
             # else wait until the site is up
-            # print(f"{tid} is waiting because the site is down\n")
+            print(f"{tid} is waiting because the site is down\n")
         else:
+            # # read non replicated value
+            # if variable.is_replicated == False:
+            #     site_id = variable.id % 10 + 1
+            #     site = self.sites[site_id]
+            #     r = site.read(self.transaction_table[tid], vid, self.wait_for_graph)
+            #     if r:
+            #         t.site_access_list.append(site.id)
+            #         return r
+            #     else:
+            #         print(f"{tid} is waiting because the site is down")
+            #         return None
+            # read replicated value
+            r = None
+            s = None
             for site in self.sites.values():
+                if site.data_table.get(vid) and site.data_table.get(vid).is_replicated == False:
+                    replicated_value = False
+                    s = site
                 if site.is_up and site.data_table.get(vid):
+                    # variable = site.data_table[vid]
+                    # if variable.is_replicated == False:
+                    #     replicated_value = False
+                    #     s = site
                     r = site.read(self.transaction_table[tid], vid, self.wait_for_graph)
                     if r:
                         t.site_access_list.append(site.id)
                         return r
-        # else wait until the site is up
-        print(f"{tid} is waiting because the site is down")
+            if replicated_value == False and not r and s.is_up == False:
+                print(f"{tid} is waiting because the site is down")
+                return r
+            print(f"{tid} waits because of a lock conflict")
+        
         return None # format only, no meaning
 
     def W(self, tid, vid, value):

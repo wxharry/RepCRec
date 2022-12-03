@@ -62,7 +62,7 @@ class DataManager:
                 shared_lock = SharedLock(vid, tid)
                 self.lock_queue[vid].add(shared_lock)
                 prev_ts = self.lock_queue[vid]
-                print(f"{tid} waits because of a lock conflict")
+                # print(f"{tid} waits because of a lock conflict")
                 if tid not in prev_ts:
                     wait_for[tid] = wait_for.get(tid, []) + [prev_ts[-1]]
                     return None
@@ -76,7 +76,7 @@ class DataManager:
             return variable
         # if exists an exclusive lock and t has no access
         elif lock.isExclusive() and not lock.hasAccess(tid):
-            print(f"{tid} waits because of a lock conflict")
+            # print(f"{tid} waits because of a lock conflict")
             shared_lock = SharedLock(vid, tid)
             self.lock_queue[vid] = self.lock_queue.get(vid, []) + [shared_lock]
             wait_for[tid] = wait_for.get(tid, []) + lock.tids
