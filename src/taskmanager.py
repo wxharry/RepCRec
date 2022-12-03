@@ -224,9 +224,6 @@ class TaskManager:
                     s = site
                 if site.is_up and site.data_table.get(vid):
                     variable = site.data_table[vid]
-                    # if variable.is_replicated == False:
-                    #     replicated_value = False
-                    #     s = site
                     if variable.access == True:
                         has_access = True
                     r = site.read(self.transaction_table[tid], vid, self.wait_for_graph)

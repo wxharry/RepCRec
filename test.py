@@ -1,6 +1,6 @@
 import os
 
-for i in range(1,22):
+for i in range(1,25):
     command1 = "python3 repcrec.py tests/test" + str(i) + ".txt > output" + str(i) + ".txt"
     # command2 = "diff a.txt refout/out" + str(i) + "_16_f"
     # command2 = "~frankeh/Public/mmu -f128 -af -oOPFS inputs/in"+ str(i)+ " inputs/rfile > b.txt"

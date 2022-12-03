@@ -412,3 +412,59 @@ W(T1, x2, 202)
 W(T2 x2, 302)
 end(T1)
 dump()
+
+// Test 22
+// all transactions commit
+// T3 waits til T1, T2 commit
+// T4 will not skip in front of T3 or T5
+// T4 waits til T5 release lock
+
+begin(T1)
+begin(T2)
+begin(T3)
+begin(T4)
+begin(T5)
+R(T1,x1)
+R(T2,x1)
+W(T3,x1,73)
+W(T5,x1,80)
+R(T4,x1)
+end(T1)
+end(T2)
+end(T3)
+end(T5)
+end(T4)
+dump()
+
+// Test 23
+// Now T1 aborts, since site 2 died after T1 accessed it. T2 ok.
+// Normally, we wait till the end(T1) to abort T1.
+// However, it is ok to abort T1 right away when fail(2) happens. Both
+// are correct.
+// T2 read commit value instead of temp value
+begin(T1)
+begin(T2)
+R(T1,x1)
+fail(2)
+W(T2,x8,88) 
+R(T2,x8)
+R(T1, x5)
+end(T2)
+recover(2)
+end(T1)
+dump()
+
+// Test 24
+// T1 waits to read value after recover site 2
+// T2 read commit value instead of temp value
+begin(T1)
+begin(T2)
+fail(2)
+R(T1,x1)
+W(T2,x8,88) 
+R(T2,x8)
+R(T1, x5)
+end(T2)
+recover(2)
+end(T1)
+dump()
