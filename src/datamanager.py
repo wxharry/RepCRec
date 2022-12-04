@@ -35,9 +35,8 @@ class DataManager:
         self.data_table[var.id] = var
 
     def has_write_lock_in_queue(self, vid):
-        # see if queue has write lock
         for l in self.lock_queue.get(vid, []):
-            if l.lock_type == LockType.W:
+            if l.lock_type == LockType.Write:
                 return True
         return False
 
@@ -74,7 +73,7 @@ class DataManager:
             # if there is a write lock waiting for the current shared lock, wait til that write finishes
             if self.has_write_lock_in_queue(vid):
                 shared_lock = SharedLock(vid, tid)
-                self.lock_queue[vid].add(shared_lock)
+                self.lock_queue[vid].append(shared_lock)
                 prev_ts = self.lock_queue[vid]
                 # print(f"{tid} waits because of a lock conflict")
                 if tid not in prev_ts:
@@ -146,11 +145,15 @@ class DataManager:
             Author: Yulin Hu
         """
         # add write lock to queue only if the queue doesn't have same type of lock for the same tid
+
         locks = self.lock_queue.get(vid, [])
         for l in locks:
             if l.lock_type == lock.lock_type and l.tids == lock.tids:
                 return
+        if locks == None:
+            locks = []
         locks.append(lock)
+        self.lock_queue[vid] = locks
                 
 
     def can_write(self, tid, vid, wait_for):
@@ -170,7 +173,8 @@ class DataManager:
         print(f"{tid} waits because of a lock conflict")
         # add the tid to the lock queue to wait if tid has not been added to the queue
         # self.lock_queue[vid] =  self.lock_queue.get(vid, []) + ([lock] if lock.tid not in self.lock_queue.get(vid, []) else [])
-        self.add_lock_to_queue(lock, vid)
+        w_lock = ExclusiveLock(vid, tid)
+        self.add_lock_to_queue(w_lock, vid)
         wait_for[tid] = list(set(wait_for.get(tid, []) + (lock.tids if lock.isExclusive() else [id for id in lock.tids if not id == tid])))
         return False
 

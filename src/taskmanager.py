@@ -49,7 +49,6 @@ class TaskManager:
     
     def execute_cmd_queue(self):
         new_queue = []
-        # print(self.operations_queue)
         for operation in self.operations_queue:
             type, params = operation[0], operation[1]
             tid, *params = params
