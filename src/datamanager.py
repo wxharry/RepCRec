@@ -126,7 +126,12 @@ class DataManager:
 
 
     def can_promote(self, tid, lock, wait_for):
-        """ returns if tid can promote on a shared lock
+        """
+        Description: returns if tid can promote on a shared lock
+        Input: dm object, transaction id, mutex lock, wait-for graph
+        Output: True if can promote; otherwise False
+        Date: 12/1/2022
+        Author: Xiaohan Wu
         """
         waiters = [waiter for waiter, occupants in wait_for.items() if tid in occupants]
         if lock.isShared() and lock.hasAccess(tid) and len(lock.tids) == 1 \
@@ -157,8 +162,13 @@ class DataManager:
                 
 
     def can_write(self, tid, vid, wait_for):
-        """ returns if tid can acquire write lock on vid
+        """ 
+        Description: returns if tid can acquire write lock on vid
         if not, it will add wait-for edges to the wait-for graph
+        Inputs: dm object, transaction_id, variable id, wait-for graph
+        Output: True/False
+        Date: 12/1/2022
+        Author: Xiaohan Wu
         """
         lock:Lock = self.lock_table.get(vid)
         if not lock:
@@ -179,6 +189,13 @@ class DataManager:
         return False
 
     def write(self, tid, vid, value):
+        """ 
+            Description: write to temp values in dm
+            Inputs: dm object, transaction_id, variable id, new value
+            Output: None if failed; otherwise new values
+            Date: 12/1/2022
+            Author: Xiaohan Wu
+        """
         lock: Lock = self.lock_table.get(vid, None)
         # variable: Variable = self.data_table.get(vid, None)
         # if no lock on variable vid
@@ -245,9 +262,13 @@ class DataManager:
                 self.data_table[vid].access = False
 
     def abort(self, tid):
-        """ release all locks acquired by tid, and remove from lock queue
+        """ 
+            Description: abort transaction tid, release all locks acquired by tid, and remove from lock queue
+            Input: dm object, transaction id
+            Output: None
+            Date: 12/1/2022
+            Author: Xiaohan Wu
         """
-
         # release lock
         for vid, lock in list(self.lock_table.items()):
             if lock:
@@ -268,6 +289,13 @@ class DataManager:
             self.temp_vars.pop(tid)
 
     def commit(self, tid, commit_time):
+        """ 
+            Description: commits transaction tid, update sites variables with temp values
+            Input: dm object, transaction tid, commit time
+            Output: None
+            Date: 12/1/2022
+            Author: Xiaohan Wu
+        """
         # release current lock for tid
         for id, lock in list(self.lock_table.items()):
             if lock and lock.hasAccess(tid):
@@ -291,6 +319,13 @@ class DataManager:
                     var.access = True
 
     def dump(self):
+        """ 
+            Description: print site information
+            Input: dm object
+            Output: None
+            Date: 11/28/2022
+            Author: Xiaohan Wu
+        """        
         print(f"site {self.id}",
               f"-",
               ", ".join([str(v) for v in self.data_table.values()]))

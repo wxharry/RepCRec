@@ -108,7 +108,12 @@ class TaskManager:
         return self.begin(tid, True)
 
     def begin(self, tid, readonly=False):
-        """ begin a transaction
+        """ 
+            Description: transaction tid begins
+            Input: tm object, transaction tid, readonly flag
+            Output: tid
+            Date: 12/01/2022
+            Author: Xiaohan Wu
         """
         if self.transaction_table.get(tid):
             print(f"transaction {tid} already exists")
@@ -120,7 +125,12 @@ class TaskManager:
         return tid
 
     def update_wait_for(self, tid):
-        """ removes tid from wait-for graph
+        """ 
+            Description: removes tid from wait-for graph
+            Input: tm object, transaction tid
+            Output: None
+            Date: 12/01/2022
+            Author: Xiaohan Wu
         """
         for t1, ts in list(self.wait_for_graph.items()):
             if tid in ts:
@@ -130,7 +140,12 @@ class TaskManager:
                 self.wait_for_graph.pop(t1)       
 
     def abort(self, tid):
-        """ commands all sites to abort tid
+        """ 
+            Description: commands all sites to abort tid
+            Input: tm object, transaction tid
+            Output: None
+            Date: 12/01/2022
+            Author: Xiaohan Wu
         """
         print(f"{tid} aborts")
         t: Transaction = self.transaction_table[tid]
@@ -142,7 +157,12 @@ class TaskManager:
             site.abort(tid)
         
     def commit(self, tid):
-        """ commands all sites to commit (update temp_vars to variables in sites)
+        """ 
+            Description: commands all sites to commit (update temp_vars to variables in sites)
+            Input: tm object, transaction tid
+            Output: None
+            Date: 12/01/2022
+            Author: Xiaohan Wu
         """
         print(f"{tid} commits")
         for site in self.sites.values():
@@ -163,7 +183,12 @@ class TaskManager:
 
 
     def end(self, tid):
-        """ the transaction ends
+        """ 
+            Description: transaction tid ends, remove all relevant information and release locks
+            Input: tm object, transaction id
+            Output: None
+            Date: 11/30/2022
+            Author: Xiaohan Wu
         """
         t: Transaction = self.transaction_table.get(tid)
         if not t:
@@ -248,6 +273,13 @@ class TaskManager:
         return None # format only, no meaning
 
     def W(self, tid, vid, value):
+        """ 
+            Description: parse a write operation from commands
+            Input: tm object, transaction tid, variable vid, value
+            Output: None if failed; otherwise returns value
+            Date: 11/30/2022
+            Author: Xiaohan Wu, Yulin Hu
+        """
         t:Transaction = self.transaction_table.get(tid)
         if not t:
             print(f"No transaction {tid} is found in transaction table")
@@ -316,6 +348,13 @@ class TaskManager:
         # print(f"site {site_id} fails at time {self.tick}")
 
     def dump(self):
+        """ 
+            Description: commands all sites to dump
+            Input: tm object
+            Output: None
+            Date: 11/30/2022
+            Author: Xiaohan Wu
+        """
         for dm in self.sites.values():
             dm.dump()
 
